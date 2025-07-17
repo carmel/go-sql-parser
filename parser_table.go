@@ -446,7 +446,7 @@ func (p *Parser) parseTableColumns() ([]Expr, error) {
 			if err := p.expectKeyword(KeywordKey); err != nil {
 				return nil, err
 			}
-			key, err := p.parseTableKey(keyPos)
+			key, err := p.parseTableKey(keyPos, "UNIQUE KEY")
 			if err != nil {
 				return nil, err
 			}
@@ -457,7 +457,7 @@ func (p *Parser) parseTableColumns() ([]Expr, error) {
 			if err := p.expectKeyword(KeywordKey); err != nil {
 				return nil, err
 			}
-			key, err := p.parseTableKey(keyPos)
+			key, err := p.parseTableKey(keyPos, "PRIMARY KEY")
 			if err != nil {
 				return nil, err
 			}
@@ -480,15 +480,24 @@ func (p *Parser) parseTableColumns() ([]Expr, error) {
 	return columns, nil
 }
 
-func (p *Parser) parseTableKey(pos Pos) (*Key, error) {
+func (p *Parser) parseTableKey(pos Pos, constraintType string) (*Key, error) {
 	key := &Key{KeyPos: pos}
-	// parse key name
+	var keyName *Ident
+	// try to parse optional constraint name
 	if p.matchTokenKind(TokenKindIdent) {
-		name, err := p.parseIdent()
+		var err error
+		keyName, err = p.parseIdent()
 		if err != nil {
 			return nil, err
 		}
-		key.Name = name
+	}
+	key.Name = keyName
+	// This is a bit of a hack, but we need to store the constraint type somewhere.
+	// We'll prepend it to the name if a name exists, or just use the type as the name.
+	if key.Name != nil {
+		key.Name.Name = constraintType + " " + key.Name.Name
+	} else {
+		key.Name = &Ident{Name: constraintType, NamePos: pos}
 	}
 	// parse key columns
 	if err := p.expectTokenKind(TokenKindLParen); err != nil {

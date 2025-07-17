@@ -114,6 +114,221 @@ func TestParseCTEWithColumnAliases(t *testing.T) {
 	}
 }
 
+func TestParseColumnConstraints(t *testing.T) {
+	sql := `CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NULL);`
+	p := NewParser(sql)
+	stmts, err := p.Parse()
+	if err != nil {
+		t.Fatalf("Failed to parse SQL: %v", err)
+	}
+	if len(stmts) != 1 {
+		t.Fatalf("Expected 1 statement, but got %d", len(stmts))
+	}
+	createTableStmt, ok := stmts[0].(*CreateTable)
+	if !ok {
+		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
+	}
+
+	// id column
+	idCol, ok := createTableStmt.TableSchema.Columns[0].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected id column to be a ColumnDef")
+	}
+	if !idCol.PrimaryKey {
+		t.Errorf("Expected id column to be primary key")
+	}
+
+	// name column
+	nameCol, ok := createTableStmt.TableSchema.Columns[1].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected name column to be a ColumnDef")
+	}
+	if nameCol.NotNull == nil {
+		t.Errorf("Expected name column to be NOT NULL")
+	}
+
+	// email column
+	emailCol, ok := createTableStmt.TableSchema.Columns[2].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected email column to be a ColumnDef")
+	}
+	if emailCol.Nullable == nil {
+		t.Errorf("Expected email column to be NULL")
+	}
+}
+
+func TestParseColumnConstraintsExtended(t *testing.T) {
+	sql := `CREATE TABLE products (
+		id INT PRIMARY KEY AUTO_INCREMENT,
+		sku VARCHAR(100) UNIQUE NOT NULL,
+		price DECIMAL(10, 2) DEFAULT 0.00,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	);`
+	p := NewParser(sql)
+	stmts, err := p.Parse()
+	if err != nil {
+		t.Fatalf("Failed to parse SQL: %v", err)
+	}
+	if len(stmts) != 1 {
+		t.Fatalf("Expected 1 statement, but got %d", len(stmts))
+	}
+	createTableStmt, ok := stmts[0].(*CreateTable)
+	if !ok {
+		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
+	}
+
+	// id column
+	idCol, ok := createTableStmt.TableSchema.Columns[0].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected id column to be a ColumnDef")
+	}
+	if !idCol.PrimaryKey {
+		t.Errorf("Expected id column to be primary key")
+	}
+	if !idCol.AutoIncrement {
+		t.Errorf("Expected id column to be auto_increment")
+	}
+
+	// sku column
+	skuCol, ok := createTableStmt.TableSchema.Columns[1].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected sku column to be a ColumnDef")
+	}
+	if !skuCol.Unique {
+		t.Errorf("Expected sku column to be unique")
+	}
+	if skuCol.NotNull == nil {
+		t.Errorf("Expected sku column to be NOT NULL")
+	}
+
+	// price column
+	priceCol, ok := createTableStmt.TableSchema.Columns[2].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected price column to be a ColumnDef")
+	}
+	if priceCol.DefaultExpr == nil {
+		t.Fatalf("Expected price column to have a default expression")
+	}
+	if priceCol.DefaultExpr.String() != "0.00" {
+		t.Errorf("Expected price column default value to be '0.00', but got %s", priceCol.DefaultExpr.String())
+	}
+
+	// created_at column
+	createdAtCol, ok := createTableStmt.TableSchema.Columns[3].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected created_at column to be a ColumnDef")
+	}
+	if createdAtCol.DefaultExpr == nil {
+		t.Fatalf("Expected created_at column to have a default expression")
+	}
+	if createdAtCol.DefaultExpr.String() != "CURRENT_TIMESTAMP" {
+		t.Errorf("Expected created_at column default value to be 'CURRENT_TIMESTAMP', but got %s", createdAtCol.DefaultExpr.String())
+	}
+	if createdAtCol.OnUpdate == nil {
+		t.Fatalf("Expected created_at column to have ON UPDATE clause")
+	}
+	if createdAtCol.OnUpdate.String() != "CURRENT_TIMESTAMP" {
+		t.Errorf("Expected created_at column ON UPDATE value to be 'CURRENT_TIMESTAMP', but got %s", createdAtCol.OnUpdate.String())
+	}
+}
+
+func TestParseTableConstraints(t *testing.T) {
+	sql := `CREATE TABLE order_items (
+		order_id INT,
+		product_id INT,
+		quantity INT,
+		PRIMARY KEY (order_id, product_id),
+		UNIQUE KEY (product_id)
+	);`
+	p := NewParser(sql)
+	stmts, err := p.Parse()
+	if err != nil {
+		t.Fatalf("Failed to parse SQL: %v", err)
+	}
+	if len(stmts) != 1 {
+		t.Fatalf("Expected 1 statement, but got %d", len(stmts))
+	}
+	createTableStmt, ok := stmts[0].(*CreateTable)
+	if !ok {
+		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
+	}
+
+	// Primary Key
+	pk, ok := createTableStmt.TableSchema.Columns[3].(*Key)
+	if !ok {
+		t.Fatalf("Expected primary key to be a Key")
+	}
+	if pk.Name.Name != "PRIMARY KEY" {
+		t.Errorf("Expected primary key name 'PRIMARY KEY', but got %s", pk.Name.Name)
+	}
+	if len(pk.Columns.Items) != 2 {
+		t.Fatalf("Expected primary key to have 2 columns")
+	}
+	if pk.Columns.Items[0].String() != "order_id" {
+		t.Errorf("Expected first primary key column to be 'order_id', but got %s", pk.Columns.Items[0].String())
+	}
+	if pk.Columns.Items[1].String() != "product_id" {
+		t.Errorf("Expected second primary key column to be 'product_id', but got %s", pk.Columns.Items[1].String())
+	}
+
+	// Unique Key
+	uniqueKey, ok := createTableStmt.TableSchema.Columns[4].(*Key)
+	if !ok {
+		t.Fatalf("Expected unique key to be a Key")
+	}
+	if uniqueKey.Name.Name != "UNIQUE KEY" {
+		t.Errorf("Expected unique key name 'UNIQUE KEY', but got %s", uniqueKey.Name.Name)
+	}
+	if len(uniqueKey.Columns.Items) != 1 {
+		t.Fatalf("Expected unique key to have 1 column")
+	}
+	if uniqueKey.Columns.Items[0].String() != "product_id" {
+		t.Errorf("Expected unique key column to be 'product_id', but got %s", uniqueKey.Columns.Items[0].String())
+	}
+}
+
+func TestParseTableNameAndColumnNames(t *testing.T) {
+	sql := `CREATE TABLE test_table (col1 INT, col2 VARCHAR(255));`
+	p := NewParser(sql)
+	stmts, err := p.Parse()
+	if err != nil {
+		t.Fatalf("Failed to parse SQL: %v", err)
+	}
+	if len(stmts) != 1 {
+		t.Fatalf("Expected 1 statement, but got %d", len(stmts))
+	}
+	createTableStmt, ok := stmts[0].(*CreateTable)
+	if !ok {
+		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
+	}
+
+	// Table Name
+	if createTableStmt.Name.Table.Name != "test_table" {
+		t.Errorf("Expected table name 'test_table', but got %s", createTableStmt.Name.Table.Name)
+	}
+
+	// Column Names
+	if len(createTableStmt.TableSchema.Columns) != 2 {
+		t.Fatalf("Expected 2 columns, but got %d", len(createTableStmt.TableSchema.Columns))
+	}
+
+	col1, ok := createTableStmt.TableSchema.Columns[0].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected first column to be a ColumnDef")
+	}
+	if col1.Name.Ident.Name != "col1" {
+		t.Errorf("Expected first column name 'col1', but got %s", col1.Name.Ident.Name)
+	}
+
+	col2, ok := createTableStmt.TableSchema.Columns[1].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected second column to be a ColumnDef")
+	}
+	if col2.Name.Ident.Name != "col2" {
+		t.Errorf("Expected second column name 'col2', but got %s", col2.Name.Ident.Name)
+	}
+}
+
 func TestParser(t *testing.T) {
 
 	// 示例SQL脚本
