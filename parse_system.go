@@ -9,7 +9,7 @@ func (p *Parser) parseSetStmt(pos Pos) (*SetStmt, error) {
 	if err := p.expectKeyword(KeywordSet); err != nil {
 		return nil, err
 	}
-	settings, err := p.parseSettingsClause(p.Pos())
+	settings, err := p.parseSettingsClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (p *Parser) parseSystemFlushExpr(pos Pos) (*SystemFlushExpr, error) {
 			Logs:         true,
 		}, nil
 	case p.tryConsumeKeywords(KeywordDistributed):
-		distributed, err := p.parseTableIdentifier(p.Pos())
+		distributed, err := p.parseTableIdentifier(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func (p *Parser) parseSystemReloadExpr(pos Pos) (*SystemReloadExpr, error) {
 			Type:         KeywordDictionaries,
 		}, nil
 	case p.tryConsumeKeywords(KeywordDictionary):
-		dictionary, err := p.parseTableIdentifier(p.Pos())
+		dictionary, err := p.parseTableIdentifier(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func (p *Parser) parseSystemSyncExpr(pos Pos) (*SystemSyncExpr, error) {
 	if err := p.expectKeyword(KeywordReplica); err != nil {
 		return nil, err
 	}
-	cluster, err := p.parseTableIdentifier(p.Pos())
+	cluster, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (p *Parser) parseSystemCtrlExpr(pos Pos) (*SystemCtrlExpr, error) {
 		default:
 			return nil, fmt.Errorf("expected SENDS|FETCHES|MERGES|TTL")
 		}
-		cluster, err := p.parseTableIdentifier(p.Pos())
+		cluster, err := p.parseTableIdentifier(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -215,13 +215,13 @@ func (p *Parser) parseDeduplicateClause(pos Pos) (*DeduplicateClause, error) {
 		}, nil
 	}
 
-	by, err := p.parseColumnExprList(p.Pos())
+	by, err := p.parseColumnExprList(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	var except *ColumnExprList
 	if p.tryConsumeKeywords(KeywordExcept) {
-		except, err = p.parseColumnExprList(p.Pos())
+		except, err = p.parseColumnExprList(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -241,13 +241,13 @@ func (p *Parser) parseOptimizeStmt(pos Pos) (*OptimizeStmt, error) {
 		return nil, err
 	}
 
-	table, err := p.parseTableIdentifier(p.Pos())
+	table, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	statementEnd := table.End()
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (p *Parser) parseOptimizeStmt(pos Pos) (*OptimizeStmt, error) {
 		statementEnd = onCluster.End()
 	}
 
-	partition, err := p.tryParsePartitionClause(p.Pos())
+	partition, err := p.tryParsePartitionClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -264,13 +264,13 @@ func (p *Parser) parseOptimizeStmt(pos Pos) (*OptimizeStmt, error) {
 	}
 
 	hasFinal := false
-	lastPos := p.Pos()
+	lastPos := p.Start()
 	if p.tryConsumeKeywords(KeywordFinal) {
 		hasFinal = true
 		statementEnd = lastPos
 	}
 
-	deduplicate, err := p.tryParseDeduplicateClause(p.Pos())
+	deduplicate, err := p.tryParseDeduplicateClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -298,15 +298,15 @@ func (p *Parser) parseSystemStmt(pos Pos) (*SystemStmt, error) {
 	var expr Expr
 	switch {
 	case p.matchKeyword(KeywordFlush):
-		expr, err = p.parseSystemFlushExpr(p.Pos())
+		expr, err = p.parseSystemFlushExpr(p.Start())
 	case p.matchKeyword(KeywordReload):
-		expr, err = p.parseSystemReloadExpr(p.Pos())
+		expr, err = p.parseSystemReloadExpr(p.Start())
 	case p.matchKeyword(KeywordSync):
-		expr, err = p.parseSystemSyncExpr(p.Pos())
+		expr, err = p.parseSystemSyncExpr(p.Start())
 	case p.matchKeyword(KeywordStart), p.matchKeyword(KeywordStop):
-		expr, err = p.parseSystemCtrlExpr(p.Pos())
+		expr, err = p.parseSystemCtrlExpr(p.Start())
 	case p.matchKeyword(KeywordDrop):
-		expr, err = p.parseSystemDropExpr(p.Pos())
+		expr, err = p.parseSystemDropExpr(p.Start())
 	default:
 		return nil, fmt.Errorf("expected FLUSH|RELOAD|SYNC|START|STOP")
 	}
@@ -326,11 +326,11 @@ func (p *Parser) parseCheckStmt(pos Pos) (*CheckStmt, error) {
 	if err := p.expectKeyword(KeywordTable); err != nil {
 		return nil, err
 	}
-	table, err := p.parseTableIdentifier(p.Pos())
+	table, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
-	partition, err := p.tryParsePartitionClause(p.Pos())
+	partition, err := p.tryParsePartitionClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -350,12 +350,12 @@ func (p *Parser) parseRoleName(_ Pos) (*RoleName, error) {
 		}
 		var scope *StringLiteral
 		if p.tryConsumeTokenKind(TokenKindAtSign) != nil {
-			scope, err = p.parseString(p.Pos())
+			scope, err = p.parseString(p.Start())
 			if err != nil {
 				return nil, err
 			}
 		}
-		onCluster, err := p.tryParseClusterClause(p.Pos())
+		onCluster, err := p.tryParseClusterClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -365,11 +365,11 @@ func (p *Parser) parseRoleName(_ Pos) (*RoleName, error) {
 			OnCluster: onCluster,
 		}, nil
 	case p.matchTokenKind(TokenKindString):
-		name, err := p.parseString(p.Pos())
+		name, err := p.parseString(p.Start())
 		if err != nil {
 			return nil, err
 		}
-		onCluster, err := p.tryParseClusterClause(p.Pos())
+		onCluster, err := p.tryParseClusterClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -412,7 +412,7 @@ func (p *Parser) parseRoleSetting(_ Pos) (*RoleSetting, error) {
 			if token := p.tryConsumeTokenKind(TokenKindSingleEQ); token != nil {
 				op = token.Kind
 			}
-			value, err := p.parseLiteral(p.Pos())
+			value, err := p.parseLiteral(p.Start())
 			if err != nil {
 				return nil, err
 			}
@@ -442,7 +442,7 @@ func (p *Parser) parseRoleSetting(_ Pos) (*RoleSetting, error) {
 func (p *Parser) parseRoleSettings(_ Pos) ([]*RoleSetting, error) {
 	settings := make([]*RoleSetting, 0)
 	for {
-		setting, err := p.parseRoleSetting(p.Pos())
+		setting, err := p.parseRoleSetting(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -480,13 +480,13 @@ func (p *Parser) parseCreateRole(pos Pos) (*CreateRole, error) {
 	}
 
 	roleNames := make([]*RoleName, 0)
-	roleName, err := p.parseRoleName(p.Pos())
+	roleName, err := p.parseRoleName(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	roleNames = append(roleNames, roleName)
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		roleName, err := p.parseRoleName(p.Pos())
+		roleName, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -500,10 +500,10 @@ func (p *Parser) parseCreateRole(pos Pos) (*CreateRole, error) {
 		if err != nil {
 			return nil, err
 		}
-		statementEnd = accessStorageType.NameEnd
+		statementEnd = accessStorageType.end
 	}
 
-	settings, err := p.tryParseRoleSettings(p.Pos())
+	settings, err := p.tryParseRoleSettings(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +545,7 @@ func (p *Parser) parseAuthenticationClause(pos Pos) (*AuthenticationClause, erro
 			if err := p.expectKeyword(KeywordServer); err != nil {
 				return nil, err
 			}
-			server, err := p.parseString(p.Pos())
+			server, err := p.parseString(p.Start())
 			if err != nil {
 				return nil, err
 			}
@@ -556,7 +556,7 @@ func (p *Parser) parseAuthenticationClause(pos Pos) (*AuthenticationClause, erro
 			auth.IsKerberos = true
 			auth.AuthEnd = p.last().End
 			if p.tryConsumeKeywords(KeywordRealm) {
-				realm, err := p.parseString(p.Pos())
+				realm, err := p.parseString(p.Start())
 				if err != nil {
 					return nil, err
 				}
@@ -571,7 +571,7 @@ func (p *Parser) parseAuthenticationClause(pos Pos) (*AuthenticationClause, erro
 			auth.AuthEnd = p.last().End
 
 			if p.tryConsumeKeywords(KeywordBy) {
-				value, err := p.parseString(p.Pos())
+				value, err := p.parseString(p.Start())
 				if err != nil {
 					return nil, err
 				}
@@ -601,7 +601,7 @@ func (p *Parser) parseHostClause(pos Pos) (*HostClause, error) {
 		hostType := p.last().String
 		_ = p.lexer.consumeToken()
 		host.HostType = hostType
-		value, err := p.parseString(p.Pos())
+		value, err := p.parseString(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -631,14 +631,14 @@ func (p *Parser) parseDefaultRoleClause(pos Pos) (*DefaultRoleClause, error) {
 	}
 
 	roles := make([]*RoleName, 0)
-	role, err := p.parseRoleName(p.Pos())
+	role, err := p.parseRoleName(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	roles = append(roles, role)
 
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		role, err := p.parseRoleName(p.Pos())
+		role, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -666,14 +666,14 @@ func (p *Parser) parseGranteesClause(pos Pos) (*GranteesClause, error) {
 	} else {
 		// Parse list of grantees
 		granteeList := make([]*RoleName, 0)
-		grantee, err := p.parseRoleName(p.Pos())
+		grantee, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
 		granteeList = append(granteeList, grantee)
 
 		for p.tryConsumeTokenKind(TokenKindComma) != nil {
-			grantee, err := p.parseRoleName(p.Pos())
+			grantee, err := p.parseRoleName(p.Start())
 			if err != nil {
 				return nil, err
 			}
@@ -687,14 +687,14 @@ func (p *Parser) parseGranteesClause(pos Pos) (*GranteesClause, error) {
 	// Check for EXCEPT clause
 	if p.tryConsumeKeywords(KeywordExcept) {
 		exceptList := make([]*RoleName, 0)
-		except, err := p.parseRoleName(p.Pos())
+		except, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
 		exceptList = append(exceptList, except)
 
 		for p.tryConsumeTokenKind(TokenKindComma) != nil {
-			except, err := p.parseRoleName(p.Pos())
+			except, err := p.parseRoleName(p.Start())
 			if err != nil {
 				return nil, err
 			}
@@ -731,14 +731,14 @@ func (p *Parser) parseCreateUserModifiers(createUser *CreateUser) error {
 
 func (p *Parser) parseUserNames() ([]*RoleName, error) {
 	userNames := make([]*RoleName, 0)
-	userName, err := p.parseRoleName(p.Pos())
+	userName, err := p.parseRoleName(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	userNames = append(userNames, userName)
 
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		userName, err := p.parseRoleName(p.Pos())
+		userName, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -749,14 +749,14 @@ func (p *Parser) parseUserNames() ([]*RoleName, error) {
 
 func (p *Parser) parseHostClauses() ([]*HostClause, error) {
 	hosts := make([]*HostClause, 0)
-	host, err := p.parseHostClause(p.Pos())
+	host, err := p.parseHostClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	hosts = append(hosts, host)
 
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		host, err := p.parseHostClause(p.Pos())
+		host, err := p.parseHostClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -773,7 +773,7 @@ func (p *Parser) parseDefaultClause(createUser *CreateUser) (bool, error) {
 
 	switch nextToken.String {
 	case KeywordRole:
-		defaultRole, err := p.parseDefaultRoleClause(p.Pos())
+		defaultRole, err := p.parseDefaultRoleClause(p.Start())
 		if err != nil {
 			return false, err
 		}
@@ -804,7 +804,7 @@ func (p *Parser) parseOptionalClauses(createUser *CreateUser) error {
 	for continueParsing {
 		switch {
 		case p.matchOneOfKeywords(KeywordNot, KeywordIdentified):
-			auth, err := p.parseAuthenticationClause(p.Pos())
+			auth, err := p.parseAuthenticationClause(p.Start())
 			if err != nil {
 				return err
 			}
@@ -829,7 +829,7 @@ func (p *Parser) parseOptionalClauses(createUser *CreateUser) error {
 			}
 
 		case p.matchKeyword(KeywordGrantees):
-			grantees, err := p.parseGranteesClause(p.Pos())
+			grantees, err := p.parseGranteesClause(p.Start())
 			if err != nil {
 				return err
 			}
@@ -838,7 +838,7 @@ func (p *Parser) parseOptionalClauses(createUser *CreateUser) error {
 
 		case p.matchKeyword(KeywordSettings):
 			_ = p.lexer.consumeToken() // consume SETTINGS keyword
-			settings, err := p.parseRoleSettings(p.Pos())
+			settings, err := p.parseRoleSettings(p.Start())
 			if err != nil {
 				return err
 			}
@@ -898,13 +898,13 @@ func (p *Parser) parserDropUserOrRole(pos Pos) (*DropUserOrRole, error) {
 	}
 
 	names := make([]*RoleName, 0)
-	name, err := p.parseRoleName(p.Pos())
+	name, err := p.parseRoleName(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	names = append(names, name)
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		name, err := p.parseRoleName(p.Pos())
+		name, err := p.parseRoleName(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -912,7 +912,7 @@ func (p *Parser) parserDropUserOrRole(pos Pos) (*DropUserOrRole, error) {
 	}
 	statementEnd := names[len(names)-1].End()
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -951,7 +951,7 @@ func (p *Parser) parsePrivilegeSelectOrInsert(pos Pos) (*PrivilegeClause, error)
 	var err error
 	var params *ParamExprList
 	if p.matchTokenKind(TokenKindLParen) {
-		params, err = p.parseFunctionParams(p.Pos())
+		params, err = p.parseFunctionParams(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -1240,7 +1240,7 @@ func (p *Parser) parsePrivilegeRoles(_ Pos) ([]*Ident, error) {
 func (p *Parser) parseGrantOptions(_ Pos) ([]string, error) {
 	options := make([]string, 0)
 	for p.matchKeyword(KeywordWith) {
-		option, err := p.parseGrantOption(p.Pos())
+		option, err := p.parseGrantOption(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -1279,8 +1279,8 @@ func (p *Parser) parseGrantSource(_ Pos) (*TableIdentifier, error) {
 		return nil, err
 	}
 	return &TableIdentifier{
-		Database: ident,
-		Table:    dotIdent,
+		Schema: ident,
+		Table:  dotIdent,
 	}, nil
 }
 
@@ -1288,18 +1288,18 @@ func (p *Parser) parseGrantPrivilegeStmt(pos Pos) (*GrantPrivilegeStmt, error) {
 	if err := p.expectKeyword(KeywordGrant); err != nil {
 		return nil, err
 	}
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	var privileges []*PrivilegeClause
-	privilege, err := p.parsePrivilegeClause(p.Pos())
+	privilege, err := p.parsePrivilegeClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	privileges = append(privileges, privilege)
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		privilege, err := p.parsePrivilegeClause(p.Pos())
+		privilege, err := p.parsePrivilegeClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -1310,7 +1310,7 @@ func (p *Parser) parseGrantPrivilegeStmt(pos Pos) (*GrantPrivilegeStmt, error) {
 	if err := p.expectKeyword(KeywordOn); err != nil {
 		return nil, err
 	}
-	on, err := p.parseGrantSource(p.Pos())
+	on, err := p.parseGrantSource(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -1318,14 +1318,14 @@ func (p *Parser) parseGrantPrivilegeStmt(pos Pos) (*GrantPrivilegeStmt, error) {
 	if err := p.expectKeyword(KeywordTo); err != nil {
 		return nil, err
 	}
-	toRoles, err := p.parsePrivilegeRoles(p.Pos())
+	toRoles, err := p.parsePrivilegeRoles(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	if len(toRoles) != 0 {
-		statementEnd = toRoles[len(toRoles)-1].NameEnd
+		statementEnd = toRoles[len(toRoles)-1].end
 	}
-	options, err := p.parseGrantOptions(p.Pos())
+	options, err := p.parseGrantOptions(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -1355,13 +1355,13 @@ func (p *Parser) parseAlterRole(pos Pos) (*AlterRole, error) {
 	}
 
 	roleRenamePairs := make([]*RoleRenamePair, 0)
-	roleRenamePair, err := p.parseRoleRenamePair(p.Pos())
+	roleRenamePair, err := p.parseRoleRenamePair(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	roleRenamePairs = append(roleRenamePairs, roleRenamePair)
 	for p.tryConsumeTokenKind(TokenKindComma) != nil {
-		roleRenamePair, err := p.parseRoleRenamePair(p.Pos())
+		roleRenamePair, err := p.parseRoleRenamePair(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -1369,7 +1369,7 @@ func (p *Parser) parseAlterRole(pos Pos) (*AlterRole, error) {
 	}
 	statementEnd := roleRenamePairs[len(roleRenamePairs)-1].End()
 
-	settings, err := p.tryParseRoleSettings(p.Pos())
+	settings, err := p.tryParseRoleSettings(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -1387,7 +1387,7 @@ func (p *Parser) parseAlterRole(pos Pos) (*AlterRole, error) {
 }
 
 func (p *Parser) parseRoleRenamePair(_ Pos) (*RoleRenamePair, error) {
-	roleName, err := p.parseRoleName(p.Pos())
+	roleName, err := p.parseRoleName(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -1404,7 +1404,7 @@ func (p *Parser) parseRoleRenamePair(_ Pos) (*RoleRenamePair, error) {
 			return nil, err
 		}
 		roleRenamePair.NewName = newName
-		roleRenamePair.StatementEnd = newName.NameEnd
+		roleRenamePair.StatementEnd = newName.end
 	}
 	return roleRenamePair, nil
 }

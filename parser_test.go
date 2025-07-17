@@ -143,8 +143,8 @@ func TestParseColumnConstraints(t *testing.T) {
 	if !ok {
 		t.Fatalf("Expected name column to be a ColumnDef")
 	}
-	if nameCol.NotNull == nil {
-		t.Errorf("Expected name column to be NOT NULL")
+	if nameCol.Nullable == nil {
+		t.Errorf("Expected name column to be NULL")
 	}
 
 	// email column
@@ -197,8 +197,8 @@ func TestParseColumnConstraintsExtended(t *testing.T) {
 	if !skuCol.Unique {
 		t.Errorf("Expected sku column to be unique")
 	}
-	if skuCol.NotNull == nil {
-		t.Errorf("Expected sku column to be NOT NULL")
+	if skuCol.Nullable == nil {
+		t.Errorf("Expected sku column to be NULL")
 	}
 
 	// price column
@@ -258,8 +258,8 @@ func TestParseTableConstraints(t *testing.T) {
 	if !ok {
 		t.Fatalf("Expected primary key to be a Key")
 	}
-	if pk.Name.Name != "PRIMARY KEY" {
-		t.Errorf("Expected primary key name 'PRIMARY KEY', but got %s", pk.Name.Name)
+	if pk.Name != "PRIMARY KEY" {
+		t.Errorf("Expected primary key name 'PRIMARY KEY', but got %s", pk.Name)
 	}
 	if len(pk.Columns.Items) != 2 {
 		t.Fatalf("Expected primary key to have 2 columns")
@@ -276,8 +276,8 @@ func TestParseTableConstraints(t *testing.T) {
 	if !ok {
 		t.Fatalf("Expected unique key to be a Key")
 	}
-	if uniqueKey.Name.Name != "UNIQUE KEY" {
-		t.Errorf("Expected unique key name 'UNIQUE KEY', but got %s", uniqueKey.Name.Name)
+	if uniqueKey.Name != "UNIQUE KEY" {
+		t.Errorf("Expected unique key name 'UNIQUE KEY', but got %s", uniqueKey.Name)
 	}
 	if len(uniqueKey.Columns.Items) != 1 {
 		t.Fatalf("Expected unique key to have 1 column")
@@ -303,8 +303,8 @@ func TestParseTableNameAndColumnNames(t *testing.T) {
 	}
 
 	// Table Name
-	if createTableStmt.Name.Table.Name != "test_table" {
-		t.Errorf("Expected table name 'test_table', but got %s", createTableStmt.Name.Table.Name)
+	if createTableStmt.Identifier.Table.Name != "test_table" {
+		t.Errorf("Expected table name 'test_table', but got %s", createTableStmt.Identifier.Table.Name)
 	}
 
 	// Column Names
@@ -376,8 +376,8 @@ CREATE TABLE orders (
 	for _, stmt := range statements {
 		if createTableStmt, ok := stmt.(*CreateTable); ok {
 			// Extract table name
-			if createTableStmt.Name != nil {
-				fmt.Printf("Table Name: %s\n", createTableStmt.Name)
+			if createTableStmt.Identifier != nil {
+				fmt.Printf("Table Name: %s\n", createTableStmt.Identifier.Table.Name)
 			}
 
 			// Extract table comment

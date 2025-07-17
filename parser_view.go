@@ -33,19 +33,19 @@ func (p *Parser) parseCreateMaterializedView(pos Pos) (*CreateMaterializedView, 
 		return nil, err
 	}
 
-	tableIdentifier, err := p.parseTableIdentifier(p.Pos())
+	tableIdentifier, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	createMaterializedView.Name = tableIdentifier
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	createMaterializedView.OnCluster = onCluster
 
-	refreshExpr, err := p.tryParseRefreshExpr(p.Pos())
+	refreshExpr, err := p.tryParseRefreshExpr(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +60,13 @@ func (p *Parser) parseCreateMaterializedView(pos Pos) (*CreateMaterializedView, 
 	}
 	if p.tryConsumeKeywords(KeywordDepends, KeywordOn) {
 		dependsOnTables := make([]*TableIdentifier, 0)
-		table, err := p.parseTableIdentifier(p.Pos())
+		table, err := p.parseTableIdentifier(p.Start())
 		if err != nil {
 			return nil, err
 		}
 		dependsOnTables = append(dependsOnTables, table)
 		for p.matchTokenKind(TokenKindComma) {
-			table, err := p.parseTableIdentifier(p.Pos())
+			table, err := p.parseTableIdentifier(p.Start())
 			if err != nil {
 				return nil, err
 			}
@@ -74,7 +74,7 @@ func (p *Parser) parseCreateMaterializedView(pos Pos) (*CreateMaterializedView, 
 		}
 		createMaterializedView.DependsOn = dependsOnTables
 	}
-	settings, err := p.tryParseSettingsClause(p.Pos())
+	settings, err := p.tryParseSettingsClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -83,21 +83,21 @@ func (p *Parser) parseCreateMaterializedView(pos Pos) (*CreateMaterializedView, 
 
 	switch {
 	case p.matchKeyword(KeywordTo):
-		destination, err := p.parseDestinationClause(p.Pos())
+		destination, err := p.parseDestinationClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
 		createMaterializedView.Destination = destination
 		createMaterializedView.StatementEnd = destination.End()
 		if p.matchTokenKind(TokenKindLParen) {
-			tableSchema, err := p.parseTableSchemaClause(p.Pos())
+			tableSchema, err := p.parseTableSchemaClause(p.Start())
 			if err != nil {
 				return nil, err
 			}
 			createMaterializedView.Destination.TableSchema = tableSchema
 		}
 	case p.matchKeyword(KeywordEngine):
-		engineExpr, err := p.parseEngineExpr(p.Pos())
+		engineExpr, err := p.parseEngineExpr(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -138,11 +138,11 @@ func (p *Parser) parseCreateMaterializedView(pos Pos) (*CreateMaterializedView, 
 			return nil, fmt.Errorf("POPULATE requires ENGINE to be specified")
 		}
 		createMaterializedView.Populate = true
-		createMaterializedView.StatementEnd = p.Pos()
+		createMaterializedView.StatementEnd = p.Start()
 	}
 
 	if p.tryConsumeKeywords(KeywordAs) {
-		subQuery, err := p.parseSubQuery(p.Pos())
+		subQuery, err := p.parseSubQuery(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +202,7 @@ func (p *Parser) parseCreateView(pos Pos, orReplace bool) (*CreateView, error) {
 		return nil, err
 	}
 
-	tableIdentifier, err := p.parseTableIdentifier(p.Pos())
+	tableIdentifier, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -214,14 +214,14 @@ func (p *Parser) parseCreateView(pos Pos, orReplace bool) (*CreateView, error) {
 	}
 	createView.UUID = uuid
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	createView.OnCluster = onCluster
 
 	if p.matchTokenKind(TokenKindLParen) {
-		tableSchema, err := p.parseTableSchemaClause(p.Pos())
+		tableSchema, err := p.parseTableSchemaClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +229,7 @@ func (p *Parser) parseCreateView(pos Pos, orReplace bool) (*CreateView, error) {
 	}
 
 	if p.tryConsumeKeywords(KeywordAs) {
-		subQuery, err := p.parseSubQuery(p.Pos())
+		subQuery, err := p.parseSubQuery(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +260,7 @@ func (p *Parser) parseCreateLiveView(pos Pos) (*CreateLiveView, error) {
 		return nil, err
 	}
 
-	tableIdentifier, err := p.parseTableIdentifier(p.Pos())
+	tableIdentifier, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -273,20 +273,20 @@ func (p *Parser) parseCreateLiveView(pos Pos) (*CreateLiveView, error) {
 	}
 	createLiveView.UUID = uuid
 	// parse ON CLUSTER clause if exists
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	createLiveView.OnCluster = onCluster
 
-	withTimeout, err := p.tryParseWithTimeout(p.Pos())
+	withTimeout, err := p.tryParseWithTimeout(p.Start())
 	if err != nil {
 		return nil, err
 	}
 	createLiveView.WithTimeout = withTimeout
 
 	if p.matchKeyword(KeywordTo) {
-		destination, err := p.parseDestinationClause(p.Pos())
+		destination, err := p.parseDestinationClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +294,7 @@ func (p *Parser) parseCreateLiveView(pos Pos) (*CreateLiveView, error) {
 	}
 
 	if p.matchTokenKind(TokenKindLParen) {
-		tableSchema, err := p.parseTableSchemaClause(p.Pos())
+		tableSchema, err := p.parseTableSchemaClause(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -302,7 +302,7 @@ func (p *Parser) parseCreateLiveView(pos Pos) (*CreateLiveView, error) {
 	}
 
 	if p.tryConsumeKeywords(KeywordAs) {
-		subQuery, err := p.parseSubQuery(p.Pos())
+		subQuery, err := p.parseSubQuery(p.Start())
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func (p *Parser) tryParseWithTimeout(pos Pos) (*WithTimeoutClause, error) {
 	withTimeout := &WithTimeoutClause{WithTimeoutPos: pos}
 
 	if p.matchTokenKind(TokenKindInt) {
-		decimalNumber, err := p.parseDecimal(p.Pos())
+		decimalNumber, err := p.parseDecimal(p.Start())
 		if err != nil {
 			return nil, err
 		}

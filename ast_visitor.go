@@ -59,7 +59,7 @@ type ASTVisitor interface {
 	VisitNestedIdentifier(expr *NestedIdentifier) error
 	VisitColumnIdentifier(expr *ColumnIdentifier) error
 	VisitTableIdentifier(expr *TableIdentifier) error
-	VisitTableSchemaExpr(expr *TableSchemaClause) error
+	VisitTableSchemaExpr(expr *SchemaClause) error
 	VisitTableArgListExpr(expr *TableArgListExpr) error
 	VisitTableFunctionExpr(expr *TableFunctionExpr) error
 	VisitOnClusterExpr(expr *ClusterClause) error
@@ -177,8 +177,6 @@ type ASTVisitor interface {
 }
 
 type VisitFunc func(expr Expr) error
-
-
 
 type DefaultASTVisitor struct {
 	Visit VisitFunc
@@ -597,7 +595,7 @@ func (v *DefaultASTVisitor) VisitTableIdentifier(expr *TableIdentifier) error {
 	return nil
 }
 
-func (v *DefaultASTVisitor) VisitTableSchemaExpr(expr *TableSchemaClause) error {
+func (v *DefaultASTVisitor) VisitTableSchemaExpr(expr *SchemaClause) error {
 	if v.Visit != nil {
 		return v.Visit(expr)
 	}

@@ -17,7 +17,7 @@ func (p *Parser) parseDropDatabase(pos Pos) (*DropDatabase, error) {
 
 	statementEnd := name.End()
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +54,12 @@ func (p *Parser) parseDropStmt(pos Pos) (*DropStmt, error) {
 		return nil, err
 	}
 
-	name, err := p.parseTableIdentifier(p.Pos())
+	name, err := p.parseTableIdentifier(p.Start())
 	if err != nil {
 		return nil, err
 	}
 
-	onCluster, err := p.tryParseClusterClause(p.Pos())
+	onCluster, err := p.tryParseClusterClause(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (p *Parser) parseDropStmt(pos Pos) (*DropStmt, error) {
 		OnCluster:    onCluster,
 		IsTemporary:  isTemporary,
 		Modifier:     modifier,
-		StatementEnd: p.Pos(),
+		StatementEnd: p.Start(),
 	}, nil
 }
 

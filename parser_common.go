@@ -34,7 +34,7 @@ func (p *Parser) End() Pos {
 	return p.last().End
 }
 
-func (p *Parser) Pos() Pos {
+func (p *Parser) Start() Pos {
 	last := p.last()
 	if last == nil {
 		return Pos(p.lexer.current)
@@ -104,8 +104,8 @@ func (p *Parser) tryParseIdent() *Ident {
 	lastToken := p.last()
 	_ = p.lexer.consumeToken()
 	return &Ident{
-		NamePos:   lastToken.Pos,
-		NameEnd:   lastToken.End,
+		start:     lastToken.Pos,
+		end:       lastToken.End,
 		Name:      lastToken.String,
 		QuoteType: lastToken.QuoteType,
 	}
@@ -117,8 +117,8 @@ func (p *Parser) parseIdent() (*Ident, error) {
 		return nil, err
 	}
 	ident := &Ident{
-		NamePos:   lastToken.Pos,
-		NameEnd:   lastToken.End,
+		start:     lastToken.Pos,
+		end:       lastToken.End,
 		Name:      lastToken.String,
 		QuoteType: lastToken.QuoteType,
 	}
@@ -133,9 +133,9 @@ func (p *Parser) parseIdentOrStar() (*Ident, error) {
 		lastToken := p.last()
 		_ = p.lexer.consumeToken()
 		return &Ident{
-			NamePos: lastToken.Pos,
-			NameEnd: lastToken.End,
-			Name:    lastToken.String,
+			start: lastToken.Pos,
+			end:   lastToken.End,
+			Name:  lastToken.String,
 		}, nil
 	default:
 		return nil, fmt.Errorf("expected <ident> or *, but got %q", p.lastTokenKind())
@@ -154,7 +154,7 @@ func (p *Parser) parseUUID() (*UUID, error) {
 		return nil, err
 	}
 
-	uuidString, err := p.parseString(p.Pos())
+	uuidString, err := p.parseString(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (p *Parser) tryParseComment() (*StringLiteral, error) {
 	if !p.tryConsumeKeywords(KeywordComment) {
 		return nil, nil
 	}
-	return p.parseString(p.Pos())
+	return p.parseString(p.Start())
 }
 
 func (p *Parser) tryParseIfExists() (bool, error) {
@@ -216,7 +216,7 @@ func (p *Parser) tryParseNotNull(pos Pos) (*NotNullLiteral, error) {
 	}
 	notNull := &NotNullLiteral{NotPos: pos}
 
-	nullPos := p.Pos()
+	nullPos := p.Start()
 	if err := p.expectKeyword(KeywordNull); err != nil {
 		return notNull, err
 	}
@@ -303,7 +303,7 @@ func (p *Parser) ParseNestedIdentifier(pos Pos) (*NestedIdentifier, error) {
 	if err != nil {
 		return nil, err
 	}
-	dotIdent, err := p.tryParseDotIdent(p.Pos())
+	dotIdent, err := p.tryParseDotIdent(p.Start())
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,7 @@ func (p *Parser) wrapError(err error) error {
 	lineNo := 0
 	column := 0
 
-	for i := 0; i < int(p.Pos()); i++ {
+	for i := 0; i < int(p.Start()); i++ {
 		if p.lexer.input[i] == '\n' {
 			lineNo++
 			column = 0

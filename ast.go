@@ -13,31 +13,32 @@ const (
 )
 
 type Expr interface {
-	Pos() Pos
+	Start() Pos
 	End() Pos
 	String() string
 	Accept(visitor ASTVisitor) error
 }
 
 type Key struct {
-	KeyPos  Pos
-	KeyEnd  Pos
-	Name    *Ident
+	start Pos
+	end   Pos
+	// Name    *Ident
+	Name    string
 	Columns *ColumnExprList
 }
 
-func (k *Key) Pos() Pos {
-	return k.KeyPos
+func (k *Key) Start() Pos {
+	return k.start
 }
 
 func (k *Key) End() Pos {
-	return k.KeyEnd
+	return k.end
 }
 
 func (k *Key) String() string {
 	var builder strings.Builder
-	if k.Name != nil {
-		builder.WriteString(k.Name.String())
+	if k.Name != "" {
+		builder.WriteString(k.Name)
 		builder.WriteString(" ")
 	}
 	builder.WriteString("(")
@@ -62,8 +63,8 @@ type SelectItem struct {
 	Alias     *Ident
 }
 
-func (s *SelectItem) Pos() Pos {
-	return s.Expr.Pos()
+func (s *SelectItem) Start() Pos {
+	return s.Expr.Start()
 }
 
 func (s *SelectItem) End() Pos {
@@ -114,7 +115,7 @@ type OperationExpr struct {
 	Kind         TokenKind
 }
 
-func (o *OperationExpr) Pos() Pos {
+func (o *OperationExpr) Start() Pos {
 	return o.OperationPos
 }
 
@@ -138,8 +139,8 @@ type TernaryOperation struct {
 	FalseExpr Expr
 }
 
-func (t *TernaryOperation) Pos() Pos {
-	return t.Condition.Pos()
+func (t *TernaryOperation) Start() Pos {
+	return t.Condition.Start()
 }
 
 func (t *TernaryOperation) End() Pos {
@@ -179,8 +180,8 @@ type BinaryOperation struct {
 	HasNot    bool
 }
 
-func (p *BinaryOperation) Pos() Pos {
-	return p.LeftExpr.Pos()
+func (p *BinaryOperation) Start() Pos {
+	return p.LeftExpr.Start()
 }
 
 func (p *BinaryOperation) End() Pos {
@@ -236,8 +237,8 @@ func (i *IndexOperation) Accept(visitor ASTVisitor) error {
 	return visitor.VisitIndexOperation(i)
 }
 
-func (i *IndexOperation) Pos() Pos {
-	return i.Object.Pos()
+func (i *IndexOperation) Start() Pos {
+	return i.Object.Start()
 }
 
 func (i *IndexOperation) End() Pos {
@@ -271,8 +272,8 @@ func (j *JoinTableExpr) Accept(visitor ASTVisitor) error {
 	return visitor.VisitJoinTableExpr(j)
 }
 
-func (j *JoinTableExpr) Pos() Pos {
-	return j.Table.Pos()
+func (j *JoinTableExpr) Start() Pos {
+	return j.Table.Start()
 }
 
 func (j *JoinTableExpr) End() Pos {
@@ -305,7 +306,7 @@ type AlterTable struct {
 	AlterExprs      []AlterTableClause
 }
 
-func (a *AlterTable) Pos() Pos {
+func (a *AlterTable) Start() Pos {
 	return a.AlterPos
 }
 
@@ -362,7 +363,7 @@ type AlterTableAttachPartition struct {
 	From      *TableIdentifier
 }
 
-func (a *AlterTableAttachPartition) Pos() Pos {
+func (a *AlterTableAttachPartition) Start() Pos {
 	return a.AttachPos
 }
 
@@ -408,7 +409,7 @@ type AlterTableDetachPartition struct {
 	Settings  *SettingsClause
 }
 
-func (a *AlterTableDetachPartition) Pos() Pos {
+func (a *AlterTableDetachPartition) Start() Pos {
 	return a.DetachPos
 }
 
@@ -452,7 +453,7 @@ type AlterTableDropPartition struct {
 	Settings    *SettingsClause
 }
 
-func (a *AlterTableDropPartition) Pos() Pos {
+func (a *AlterTableDropPartition) Start() Pos {
 	return a.DropPos
 }
 
@@ -498,7 +499,7 @@ type AlterTableMaterializeProjection struct {
 	Partition       *PartitionClause
 }
 
-func (a *AlterTableMaterializeProjection) Pos() Pos {
+func (a *AlterTableMaterializeProjection) Start() Pos {
 	return a.MaterializedPos
 }
 
@@ -548,7 +549,7 @@ type AlterTableMaterializeIndex struct {
 	Partition       *PartitionClause
 }
 
-func (a *AlterTableMaterializeIndex) Pos() Pos {
+func (a *AlterTableMaterializeIndex) Start() Pos {
 	return a.MaterializedPos
 }
 
@@ -596,7 +597,7 @@ type AlterTableFreezePartition struct {
 	Partition    *PartitionClause
 }
 
-func (a *AlterTableFreezePartition) Pos() Pos {
+func (a *AlterTableFreezePartition) Start() Pos {
 	return a.FreezePos
 }
 
@@ -638,7 +639,7 @@ type AlterTableAddColumn struct {
 	After       *NestedIdentifier
 }
 
-func (a *AlterTableAddColumn) Pos() Pos {
+func (a *AlterTableAddColumn) Start() Pos {
 	return a.AddPos
 }
 
@@ -687,7 +688,7 @@ type AlterTableAddIndex struct {
 	After       *NestedIdentifier
 }
 
-func (a *AlterTableAddIndex) Pos() Pos {
+func (a *AlterTableAddIndex) Start() Pos {
 	return a.AddPos
 }
 
@@ -732,7 +733,7 @@ type ProjectionOrderByClause struct {
 	Columns    *ColumnExprList
 }
 
-func (p *ProjectionOrderByClause) Pos() Pos {
+func (p *ProjectionOrderByClause) Start() Pos {
 	return p.OrderByPos
 }
 
@@ -762,7 +763,7 @@ type ProjectionSelectStmt struct {
 	OrderBy       *ProjectionOrderByClause
 }
 
-func (p *ProjectionSelectStmt) Pos() Pos {
+func (p *ProjectionSelectStmt) Start() Pos {
 	return p.LeftParenPos
 
 }
@@ -822,7 +823,7 @@ type TableProjection struct {
 	Select        *ProjectionSelectStmt
 }
 
-func (t *TableProjection) Pos() Pos {
+func (t *TableProjection) Start() Pos {
 	return t.ProjectionPos
 }
 
@@ -859,7 +860,7 @@ type AlterTableAddProjection struct {
 	After           *NestedIdentifier
 }
 
-func (a *AlterTableAddProjection) Pos() Pos {
+func (a *AlterTableAddProjection) Start() Pos {
 	return a.AddPos
 }
 
@@ -905,7 +906,7 @@ type AlterTableDropColumn struct {
 	IfExists   bool
 }
 
-func (a *AlterTableDropColumn) Pos() Pos {
+func (a *AlterTableDropColumn) Start() Pos {
 	return a.DropPos
 }
 
@@ -942,7 +943,7 @@ type AlterTableDropIndex struct {
 	IfExists  bool
 }
 
-func (a *AlterTableDropIndex) Pos() Pos {
+func (a *AlterTableDropIndex) Start() Pos {
 	return a.DropPos
 }
 
@@ -979,7 +980,7 @@ type AlterTableDropProjection struct {
 	IfExists       bool
 }
 
-func (a *AlterTableDropProjection) Pos() Pos {
+func (a *AlterTableDropProjection) Start() Pos {
 	return a.DropPos
 }
 
@@ -1015,7 +1016,7 @@ type AlterTableRemoveTTL struct {
 	StatementEnd Pos
 }
 
-func (a *AlterTableRemoveTTL) Pos() Pos {
+func (a *AlterTableRemoveTTL) Start() Pos {
 	return a.RemovePos
 }
 
@@ -1046,7 +1047,7 @@ type AlterTableClearColumn struct {
 	PartitionExpr *PartitionClause
 }
 
-func (a *AlterTableClearColumn) Pos() Pos {
+func (a *AlterTableClearColumn) Start() Pos {
 	return a.ClearPos
 }
 
@@ -1096,7 +1097,7 @@ type AlterTableClearIndex struct {
 	PartitionExpr *PartitionClause
 }
 
-func (a *AlterTableClearIndex) Pos() Pos {
+func (a *AlterTableClearIndex) Start() Pos {
 	return a.ClearPos
 }
 
@@ -1146,7 +1147,7 @@ type AlterTableClearProjection struct {
 	PartitionExpr  *PartitionClause
 }
 
-func (a *AlterTableClearProjection) Pos() Pos {
+func (a *AlterTableClearProjection) Start() Pos {
 	return a.ClearPos
 }
 
@@ -1195,7 +1196,7 @@ type AlterTableRenameColumn struct {
 	NewColumnName *NestedIdentifier
 }
 
-func (a *AlterTableRenameColumn) Pos() Pos {
+func (a *AlterTableRenameColumn) Start() Pos {
 	return a.RenamePos
 }
 
@@ -1237,7 +1238,7 @@ type AlterTableModifyQuery struct {
 	SelectExpr   *SelectQuery
 }
 
-func (a *AlterTableModifyQuery) Pos() Pos {
+func (a *AlterTableModifyQuery) Start() Pos {
 	return a.ModifyPos
 }
 
@@ -1271,7 +1272,7 @@ type AlterTableModifyTTL struct {
 	TTL          *TTLExpr
 }
 
-func (a *AlterTableModifyTTL) Pos() Pos {
+func (a *AlterTableModifyTTL) Start() Pos {
 	return a.ModifyPos
 }
 
@@ -1309,7 +1310,7 @@ type AlterTableModifyColumn struct {
 	RemovePropertyType *RemovePropertyType
 }
 
-func (a *AlterTableModifyColumn) Pos() Pos {
+func (a *AlterTableModifyColumn) Start() Pos {
 	return a.ModifyPos
 }
 
@@ -1354,7 +1355,7 @@ type AlterTableReplacePartition struct {
 	Table      *TableIdentifier
 }
 
-func (a *AlterTableReplacePartition) Pos() Pos {
+func (a *AlterTableReplacePartition) Start() Pos {
 	return a.ReplacePos
 }
 
@@ -1393,7 +1394,7 @@ type RemovePropertyType struct {
 	PropertyType Expr
 }
 
-func (a *RemovePropertyType) Pos() Pos {
+func (a *RemovePropertyType) Start() Pos {
 	return a.RemovePos
 }
 
@@ -1426,7 +1427,7 @@ type TableIndex struct {
 	Granularity *NumberLiteral
 }
 
-func (a *TableIndex) Pos() Pos {
+func (a *TableIndex) Start() Pos {
 	return a.IndexPos
 }
 
@@ -1483,16 +1484,16 @@ func (a *TableIndex) Accept(visitor ASTVisitor) error {
 type Ident struct {
 	Name      string
 	QuoteType int
-	NamePos   Pos
-	NameEnd   Pos
+	start     Pos
+	end       Pos
 }
 
-func (i *Ident) Pos() Pos {
-	return i.NamePos
+func (i *Ident) Start() Pos {
+	return i.start
 }
 
 func (i *Ident) End() Pos {
-	return i.NameEnd
+	return i.end
 }
 
 func (i *Ident) String() string {
@@ -1515,7 +1516,7 @@ type UUID struct {
 	Value *StringLiteral
 }
 
-func (u *UUID) Pos() Pos {
+func (u *UUID) Start() Pos {
 	return u.Value.LiteralPos
 }
 
@@ -1543,7 +1544,7 @@ type CreateDatabase struct {
 	Comment      *StringLiteral
 }
 
-func (c *CreateDatabase) Pos() Pos {
+func (c *CreateDatabase) Start() Pos {
 	return c.CreatePos
 }
 
@@ -1600,7 +1601,7 @@ type TableOption struct {
 	HasEquals bool
 }
 
-func (t *TableOption) Pos() Pos {
+func (t *TableOption) Start() Pos {
 	return t.OptionPos
 }
 
@@ -1645,17 +1646,17 @@ type CreateTable struct {
 	CreatePos    Pos // position of CREATE|ATTACH keyword
 	StatementEnd Pos
 	OrReplace    bool
-	Name         *TableIdentifier
+	Identifier   *TableIdentifier
 	IfNotExists  bool
 	UUID         *UUID
 	OnCluster    *ClusterClause
-	TableSchema  *TableSchemaClause
+	TableSchema  *SchemaClause
 	SubQuery     *SubQuery
 	HasTemporary bool
 	TableOptions []*TableOption
 }
 
-func (c *CreateTable) Pos() Pos {
+func (c *CreateTable) Start() Pos {
 	return c.CreatePos
 }
 
@@ -1680,8 +1681,8 @@ func (c *CreateTable) String() string {
 	if c.IfNotExists {
 		builder.WriteString("IF NOT EXISTS ")
 	}
-	if c.Name != nil {
-		builder.WriteString(c.Name.String())
+	if c.Identifier != nil {
+		builder.WriteString(c.Identifier.String())
 	}
 	if c.UUID != nil {
 		builder.WriteString(" ")
@@ -1709,7 +1710,7 @@ func (c *CreateTable) String() string {
 func (c *CreateTable) Accept(visitor ASTVisitor) error {
 	visitor.Enter(c)
 	defer visitor.Leave(c)
-	if err := c.Name.Accept(visitor); err != nil {
+	if err := c.Identifier.Accept(visitor); err != nil {
 		return err
 	}
 	if c.UUID != nil {
@@ -1761,7 +1762,7 @@ type CreateMaterializedView struct {
 	SQLSecurity  string
 }
 
-func (c *CreateMaterializedView) Pos() Pos {
+func (c *CreateMaterializedView) Start() Pos {
 	return c.CreatePos
 }
 
@@ -1918,11 +1919,11 @@ type CreateView struct {
 	IfNotExists  bool
 	UUID         *UUID
 	OnCluster    *ClusterClause
-	TableSchema  *TableSchemaClause
+	TableSchema  *SchemaClause
 	SubQuery     *SubQuery
 }
 
-func (c *CreateView) Pos() Pos {
+func (c *CreateView) Start() Pos {
 	return c.CreatePos
 }
 
@@ -2010,7 +2011,7 @@ func (c *CreateFunction) Type() string {
 	return "FUNCTION"
 }
 
-func (c *CreateFunction) Pos() Pos {
+func (c *CreateFunction) Start() Pos {
 	return c.CreatePos
 }
 
@@ -2066,8 +2067,8 @@ type RoleName struct {
 	OnCluster *ClusterClause
 }
 
-func (r *RoleName) Pos() Pos {
-	return r.Name.Pos()
+func (r *RoleName) Start() Pos {
+	return r.Name.Start()
 }
 
 func (r *RoleName) End() Pos {
@@ -2119,8 +2120,8 @@ type SettingPair struct {
 	Value     Expr
 }
 
-func (s *SettingPair) Pos() Pos {
-	return s.Name.NamePos
+func (s *SettingPair) Start() Pos {
+	return s.Name.start
 }
 
 func (s *SettingPair) End() Pos {
@@ -2160,16 +2161,16 @@ type RoleSetting struct {
 	Modifier     *Ident
 }
 
-func (r *RoleSetting) Pos() Pos {
+func (r *RoleSetting) Start() Pos {
 	if len(r.SettingPairs) > 0 {
-		return r.SettingPairs[0].Pos()
+		return r.SettingPairs[0].Start()
 	}
-	return r.Modifier.NamePos
+	return r.Modifier.start
 }
 
 func (r *RoleSetting) End() Pos {
 	if r.Modifier != nil {
-		return r.Modifier.NameEnd
+		return r.Modifier.end
 	}
 	return r.SettingPairs[len(r.SettingPairs)-1].End()
 }
@@ -2217,7 +2218,7 @@ type CreateRole struct {
 	Settings          []*RoleSetting
 }
 
-func (c *CreateRole) Pos() Pos {
+func (c *CreateRole) Start() Pos {
 	return c.CreatePos
 }
 
@@ -2292,7 +2293,7 @@ type AuthenticationClause struct {
 	IsKerberos    bool
 }
 
-func (a *AuthenticationClause) Pos() Pos {
+func (a *AuthenticationClause) Start() Pos {
 	return a.AuthPos
 }
 
@@ -2357,7 +2358,7 @@ type HostClause struct {
 	HostValue *StringLiteral
 }
 
-func (h *HostClause) Pos() Pos {
+func (h *HostClause) Start() Pos {
 	return h.HostPos
 }
 
@@ -2394,7 +2395,7 @@ type DefaultRoleClause struct {
 	None       bool
 }
 
-func (d *DefaultRoleClause) Pos() Pos {
+func (d *DefaultRoleClause) Start() Pos {
 	return d.DefaultPos
 }
 
@@ -2438,7 +2439,7 @@ type GranteesClause struct {
 	None        bool
 }
 
-func (g *GranteesClause) Pos() Pos {
+func (g *GranteesClause) Start() Pos {
 	return g.GranteesPos
 }
 
@@ -2504,7 +2505,7 @@ type CreateUser struct {
 	Settings        []*RoleSetting
 }
 
-func (c *CreateUser) Pos() Pos {
+func (c *CreateUser) Start() Pos {
 	return c.CreatePos
 }
 
@@ -2619,7 +2620,7 @@ type AlterRole struct {
 	Settings        []*RoleSetting
 }
 
-func (a *AlterRole) Pos() Pos {
+func (a *AlterRole) Start() Pos {
 	return a.AlterPos
 }
 
@@ -2677,8 +2678,8 @@ type RoleRenamePair struct {
 	StatementEnd Pos
 }
 
-func (r *RoleRenamePair) Pos() Pos {
-	return r.RoleName.Pos()
+func (r *RoleRenamePair) Start() Pos {
+	return r.RoleName.Start()
 }
 
 func (r *RoleRenamePair) End() Pos {
@@ -2712,10 +2713,10 @@ func (r *RoleRenamePair) Accept(visitor ASTVisitor) error {
 type DestinationClause struct {
 	ToPos           Pos
 	TableIdentifier *TableIdentifier
-	TableSchema     *TableSchemaClause
+	TableSchema     *SchemaClause
 }
 
-func (d *DestinationClause) Pos() Pos {
+func (d *DestinationClause) Start() Pos {
 	return d.ToPos
 }
 
@@ -2745,7 +2746,7 @@ type ConstraintClause struct {
 	Expr          Expr
 }
 
-func (c *ConstraintClause) Pos() Pos {
+func (c *ConstraintClause) Start() Pos {
 	return c.ConstraintPos
 }
 
@@ -2777,7 +2778,7 @@ type NullLiteral struct {
 	NullPos Pos
 }
 
-func (n *NullLiteral) Pos() Pos {
+func (n *NullLiteral) Start() Pos {
 	return n.NullPos
 }
 
@@ -2800,7 +2801,7 @@ type NotNullLiteral struct {
 	NullLiteral *NullLiteral
 }
 
-func (n *NotNullLiteral) Pos() Pos {
+func (n *NotNullLiteral) Start() Pos {
 	return n.NotPos
 }
 
@@ -2826,8 +2827,8 @@ type NestedIdentifier struct {
 	DotIdent *Ident
 }
 
-func (n *NestedIdentifier) Pos() Pos {
-	return n.Ident.Pos()
+func (n *NestedIdentifier) Start() Pos {
+	return n.Ident.Start()
 }
 
 func (n *NestedIdentifier) End() Pos {
@@ -2859,28 +2860,28 @@ func (n *NestedIdentifier) Accept(visitor ASTVisitor) error {
 }
 
 type ColumnIdentifier struct {
-	Database *Ident
-	Table    *Ident
-	Column   *Ident
+	Schema *Ident
+	Table  *Ident
+	Column *Ident
 }
 
-func (c *ColumnIdentifier) Pos() Pos {
-	if c.Database != nil {
-		return c.Database.NamePos
+func (c *ColumnIdentifier) Start() Pos {
+	if c.Schema != nil {
+		return c.Schema.start
 	} else if c.Table != nil {
-		return c.Table.NamePos
+		return c.Table.start
 	} else {
-		return c.Column.NamePos
+		return c.Column.start
 	}
 }
 
 func (c *ColumnIdentifier) End() Pos {
-	return c.Column.NameEnd
+	return c.Column.end
 }
 
 func (c *ColumnIdentifier) String() string {
-	if c.Database != nil {
-		return c.Database.String() + "." + c.Table.String() + "." + c.Column.String()
+	if c.Schema != nil {
+		return c.Schema.String() + "." + c.Table.String() + "." + c.Column.String()
 	} else if c.Table != nil {
 		return c.Table.String() + "." + c.Column.String()
 	} else {
@@ -2891,8 +2892,8 @@ func (c *ColumnIdentifier) String() string {
 func (c *ColumnIdentifier) Accept(visitor ASTVisitor) error {
 	visitor.Enter(c)
 	defer visitor.Leave(c)
-	if c.Database != nil {
-		if err := c.Database.Accept(visitor); err != nil {
+	if c.Schema != nil {
+		if err := c.Schema.Accept(visitor); err != nil {
 			return err
 		}
 	}
@@ -2908,15 +2909,15 @@ func (c *ColumnIdentifier) Accept(visitor ASTVisitor) error {
 }
 
 type TableIdentifier struct {
-	Database *Ident
-	Table    *Ident
+	Schema *Ident
+	Table  *Ident
 }
 
-func (t *TableIdentifier) Pos() Pos {
-	if t.Database != nil {
-		return t.Database.Pos()
+func (t *TableIdentifier) Start() Pos {
+	if t.Schema != nil {
+		return t.Schema.Start()
 	}
-	return t.Table.Pos()
+	return t.Table.Start()
 }
 
 func (t *TableIdentifier) End() Pos {
@@ -2924,8 +2925,8 @@ func (t *TableIdentifier) End() Pos {
 }
 
 func (t *TableIdentifier) String() string {
-	if t.Database != nil {
-		return t.Database.String() + "." + t.Table.String()
+	if t.Schema != nil {
+		return t.Schema.String() + "." + t.Table.String()
 	}
 	return t.Table.String()
 }
@@ -2933,8 +2934,8 @@ func (t *TableIdentifier) String() string {
 func (t *TableIdentifier) Accept(visitor ASTVisitor) error {
 	visitor.Enter(t)
 	defer visitor.Leave(t)
-	if t.Database != nil {
-		if err := t.Database.Accept(visitor); err != nil {
+	if t.Schema != nil {
+		if err := t.Schema.Accept(visitor); err != nil {
 			return err
 		}
 	}
@@ -2944,23 +2945,23 @@ func (t *TableIdentifier) Accept(visitor ASTVisitor) error {
 	return visitor.VisitTableIdentifier(t)
 }
 
-type TableSchemaClause struct {
-	SchemaPos     Pos
-	SchemaEnd     Pos
+type SchemaClause struct {
+	start         Pos
+	end           Pos
 	Columns       []Expr
 	AliasTable    *TableIdentifier
 	TableFunction *TableFunctionExpr
 }
 
-func (t *TableSchemaClause) Pos() Pos {
-	return t.SchemaPos
+func (t *SchemaClause) Start() Pos {
+	return t.start
 }
 
-func (t *TableSchemaClause) End() Pos {
-	return t.SchemaEnd
+func (t *SchemaClause) End() Pos {
+	return t.end
 }
 
-func (t *TableSchemaClause) String() string {
+func (t *SchemaClause) String() string {
 	var builder strings.Builder
 	if len(t.Columns) > 0 {
 		builder.WriteString("(")
@@ -2983,7 +2984,7 @@ func (t *TableSchemaClause) String() string {
 	return builder.String()
 }
 
-func (t *TableSchemaClause) Accept(visitor ASTVisitor) error {
+func (t *SchemaClause) Accept(visitor ASTVisitor) error {
 	visitor.Enter(t)
 	defer visitor.Leave(t)
 	for _, column := range t.Columns {
@@ -3010,7 +3011,7 @@ type TableArgListExpr struct {
 	Args          []Expr
 }
 
-func (t *TableArgListExpr) Pos() Pos {
+func (t *TableArgListExpr) Start() Pos {
 	return t.LeftParenPos
 }
 
@@ -3047,8 +3048,8 @@ type TableFunctionExpr struct {
 	Args *TableArgListExpr
 }
 
-func (t *TableFunctionExpr) Pos() Pos {
-	return t.Name.Pos()
+func (t *TableFunctionExpr) Start() Pos {
+	return t.Name.Start()
 }
 
 func (t *TableFunctionExpr) End() Pos {
@@ -3079,7 +3080,7 @@ type ClusterClause struct {
 	Expr  Expr
 }
 
-func (o *ClusterClause) Pos() Pos {
+func (o *ClusterClause) Start() Pos {
 	return o.OnPos
 }
 
@@ -3110,7 +3111,7 @@ type PartitionClause struct {
 	All          bool
 }
 
-func (p *PartitionClause) Pos() Pos {
+func (p *PartitionClause) Start() Pos {
 	return p.PartitionPos
 }
 
@@ -3155,7 +3156,7 @@ type PartitionByClause struct {
 	Expr         Expr
 }
 
-func (p *PartitionByClause) Pos() Pos {
+func (p *PartitionByClause) Start() Pos {
 	return p.PartitionPos
 }
 
@@ -3184,7 +3185,7 @@ type PrimaryKeyClause struct {
 	Expr       Expr
 }
 
-func (p *PrimaryKeyClause) Pos() Pos {
+func (p *PrimaryKeyClause) Start() Pos {
 	return p.PrimaryPos
 }
 
@@ -3213,7 +3214,7 @@ type SampleByClause struct {
 	Expr      Expr
 }
 
-func (s *SampleByClause) Pos() Pos {
+func (s *SampleByClause) Start() Pos {
 	return s.SamplePos
 }
 
@@ -3244,7 +3245,7 @@ type TTLPolicyRuleAction struct {
 	Codec     *CompressionCodec
 }
 
-func (t *TTLPolicyRuleAction) Pos() Pos {
+func (t *TTLPolicyRuleAction) Start() Pos {
 	return t.ActionPos
 }
 
@@ -3283,7 +3284,7 @@ type RefreshExpr struct {
 	Offset     *IntervalExpr
 }
 
-func (r *RefreshExpr) Pos() Pos {
+func (r *RefreshExpr) Start() Pos {
 	return r.RefreshPos
 }
 
@@ -3332,7 +3333,7 @@ type TTLPolicyRule struct {
 	Action   *TTLPolicyRuleAction
 }
 
-func (t *TTLPolicyRule) Pos() Pos {
+func (t *TTLPolicyRule) Start() Pos {
 	return t.RulePos
 }
 
@@ -3382,14 +3383,14 @@ type TTLPolicy struct {
 	GroupBy *GroupByClause
 }
 
-func (t *TTLPolicy) Pos() Pos {
+func (t *TTLPolicy) Start() Pos {
 	if t.Item != nil {
-		return t.Item.Pos()
+		return t.Item.Start()
 	}
 	if t.Where != nil {
-		return t.Where.Pos()
+		return t.Where.Start()
 	}
-	return t.GroupBy.Pos()
+	return t.GroupBy.Start()
 }
 
 func (t *TTLPolicy) End() Pos {
@@ -3446,7 +3447,7 @@ type TTLExpr struct {
 	Policy *TTLPolicy
 }
 
-func (t *TTLExpr) Pos() Pos {
+func (t *TTLExpr) Start() Pos {
 	return t.TTLPos
 }
 
@@ -3484,7 +3485,7 @@ type TTLClause struct {
 	Items   []*TTLExpr
 }
 
-func (t *TTLClause) Pos() Pos {
+func (t *TTLClause) Start() Pos {
 	return t.TTLPos
 }
 
@@ -3522,7 +3523,7 @@ type OrderExpr struct {
 	Direction OrderDirection
 }
 
-func (o *OrderExpr) Pos() Pos {
+func (o *OrderExpr) Start() Pos {
 	return o.OrderPos
 }
 
@@ -3567,7 +3568,7 @@ type OrderByClause struct {
 	Items    []Expr
 }
 
-func (o *OrderByClause) Pos() Pos {
+func (o *OrderByClause) Start() Pos {
 	return o.OrderPos
 }
 
@@ -3605,7 +3606,7 @@ type SettingExprList struct {
 	Expr        Expr
 }
 
-func (s *SettingExprList) Pos() Pos {
+func (s *SettingExprList) Start() Pos {
 	return s.SettingsPos
 }
 
@@ -3639,7 +3640,7 @@ type SettingsClause struct {
 	Items       []*SettingExprList
 }
 
-func (s *SettingsClause) Pos() Pos {
+func (s *SettingsClause) Start() Pos {
 	return s.SettingsPos
 }
 
@@ -3677,7 +3678,7 @@ type ParamExprList struct {
 	ColumnArgList *ColumnArgList
 }
 
-func (f *ParamExprList) Pos() Pos {
+func (f *ParamExprList) Start() Pos {
 	return f.LeftParenPos
 }
 
@@ -3721,7 +3722,7 @@ type MapLiteral struct {
 	KeyValues []KeyValue
 }
 
-func (m *MapLiteral) Pos() Pos {
+func (m *MapLiteral) Start() Pos {
 	return m.LBracePos
 }
 
@@ -3766,7 +3767,7 @@ type QueryParam struct {
 	Type      ColumnType
 }
 
-func (q *QueryParam) Pos() Pos {
+func (q *QueryParam) Start() Pos {
 	return q.LBracePos
 }
 
@@ -3802,7 +3803,7 @@ type ArrayParamList struct {
 	Items           *ColumnExprList
 }
 
-func (a *ArrayParamList) Pos() Pos {
+func (a *ArrayParamList) Start() Pos {
 	return a.LeftBracketPos
 }
 
@@ -3837,8 +3838,8 @@ type ObjectParams struct {
 	Params *ArrayParamList
 }
 
-func (o *ObjectParams) Pos() Pos {
-	return o.Object.Pos()
+func (o *ObjectParams) Start() Pos {
+	return o.Object.Start()
 }
 
 func (o *ObjectParams) End() Pos {
@@ -3869,8 +3870,8 @@ type FunctionExpr struct {
 	Params *ParamExprList
 }
 
-func (f *FunctionExpr) Pos() Pos {
-	return f.Name.NamePos
+func (f *FunctionExpr) Start() Pos {
+	return f.Name.start
 }
 
 func (f *FunctionExpr) End() Pos {
@@ -3907,8 +3908,8 @@ type WindowFunctionExpr struct {
 	OverExpr Expr
 }
 
-func (w *WindowFunctionExpr) Pos() Pos {
-	return w.Function.Pos()
+func (w *WindowFunctionExpr) Start() Pos {
+	return w.Function.Start()
 }
 
 func (w *WindowFunctionExpr) End() Pos {
@@ -3942,7 +3943,7 @@ type TypedPlaceholder struct {
 	Type          ColumnType
 }
 
-func (t *TypedPlaceholder) Pos() Pos {
+func (t *TypedPlaceholder) Start() Pos {
 	return t.LeftBracePos
 }
 
@@ -3977,13 +3978,13 @@ type ColumnExpr struct {
 	Alias *Ident
 }
 
-func (c *ColumnExpr) Pos() Pos {
-	return c.Expr.Pos()
+func (c *ColumnExpr) Start() Pos {
+	return c.Expr.Start()
 }
 
 func (c *ColumnExpr) End() Pos {
 	if c.Alias != nil {
-		return c.Alias.NameEnd
+		return c.Alias.end
 	}
 	return c.Expr.End()
 }
@@ -4035,8 +4036,8 @@ type ColumnDef struct {
 	OnUpdate         *FunctionExpr
 }
 
-func (c *ColumnDef) Pos() Pos {
-	return c.Name.Pos()
+func (c *ColumnDef) Start() Pos {
+	return c.Name.Start()
 }
 
 func (c *ColumnDef) End() Pos {
@@ -4155,12 +4156,12 @@ type ScalarType struct {
 	Name *Ident
 }
 
-func (s *ScalarType) Pos() Pos {
-	return s.Name.NamePos
+func (s *ScalarType) Start() Pos {
+	return s.Name.start
 }
 
 func (s *ScalarType) End() Pos {
-	return s.Name.NameEnd
+	return s.Name.end
 }
 
 func (s *ScalarType) String() string {
@@ -4231,7 +4232,7 @@ type JSONOptions struct {
 	Items  []*JSONOption
 }
 
-func (j *JSONOptions) Pos() Pos {
+func (j *JSONOptions) Start() Pos {
 	return j.LParen
 }
 
@@ -4257,15 +4258,15 @@ type JSONType struct {
 	Options *JSONOptions
 }
 
-func (j *JSONType) Pos() Pos {
-	return j.Name.NamePos
+func (j *JSONType) Start() Pos {
+	return j.Name.start
 }
 
 func (j *JSONType) End() Pos {
 	if j.Options != nil {
 		return j.Options.RParen
 	}
-	return j.Name.NameEnd
+	return j.Name.end
 }
 
 func (j *JSONType) String() string {
@@ -4294,12 +4295,12 @@ type PropertyType struct {
 	Name *Ident
 }
 
-func (c *PropertyType) Pos() Pos {
-	return c.Name.NamePos
+func (c *PropertyType) Start() Pos {
+	return c.Name.start
 }
 
 func (c *PropertyType) End() Pos {
-	return c.Name.NameEnd
+	return c.Name.end
 }
 
 func (c *PropertyType) String() string {
@@ -4326,8 +4327,8 @@ type TypeWithParams struct {
 	Params        []Literal
 }
 
-func (s *TypeWithParams) Pos() Pos {
-	return s.Name.NamePos
+func (s *TypeWithParams) Start() Pos {
+	return s.Name.start
 }
 
 func (s *TypeWithParams) End() Pos {
@@ -4373,8 +4374,8 @@ type ComplexType struct {
 	Params        []ColumnType
 }
 
-func (c *ComplexType) Pos() Pos {
-	return c.Name.NamePos
+func (c *ComplexType) Start() Pos {
+	return c.Name.start
 }
 
 func (c *ComplexType) End() Pos {
@@ -4420,8 +4421,8 @@ type NestedType struct {
 	Columns       []Expr
 }
 
-func (n *NestedType) Pos() Pos {
-	return n.Name.NamePos
+func (n *NestedType) Start() Pos {
+	return n.Name.start
 }
 
 func (n *NestedType) End() Pos {
@@ -4471,7 +4472,7 @@ type CompressionCodec struct {
 	Level         *NumberLiteral // compression level
 }
 
-func (c *CompressionCodec) Pos() Pos {
+func (c *CompressionCodec) Start() Pos {
 	return c.CodecPos
 }
 
@@ -4535,7 +4536,7 @@ type NumberLiteral struct {
 	Base    int
 }
 
-func (n *NumberLiteral) Pos() Pos {
+func (n *NumberLiteral) Start() Pos {
 	return n.NumPos
 }
 
@@ -4559,7 +4560,7 @@ type StringLiteral struct {
 	Literal    string
 }
 
-func (s *StringLiteral) Pos() Pos {
+func (s *StringLiteral) Start() Pos {
 	return s.LiteralPos
 }
 
@@ -4583,7 +4584,7 @@ type PlaceHolder struct {
 	Type           string
 }
 
-func (p *PlaceHolder) Pos() Pos {
+func (p *PlaceHolder) Start() Pos {
 	return p.PlaceholderPos
 }
 
@@ -4607,7 +4608,7 @@ type RatioExpr struct {
 	Denominator *NumberLiteral
 }
 
-func (r *RatioExpr) Pos() Pos {
+func (r *RatioExpr) Start() Pos {
 	return r.Numerator.NumPos
 }
 
@@ -4647,8 +4648,8 @@ type EnumValue struct {
 	Value *NumberLiteral
 }
 
-func (e *EnumValue) Pos() Pos {
-	return e.Name.Pos()
+func (e *EnumValue) Start() Pos {
+	return e.Name.Start()
 }
 
 func (e *EnumValue) End() Pos {
@@ -4682,7 +4683,7 @@ type EnumType struct {
 	Values  []EnumValue
 }
 
-func (e *EnumType) Pos() Pos {
+func (e *EnumType) Start() Pos {
 	return e.ListPos
 }
 
@@ -4730,11 +4731,11 @@ type IntervalExpr struct {
 	Unit *Ident
 }
 
-func (i *IntervalExpr) Pos() Pos {
+func (i *IntervalExpr) Start() Pos {
 	if i.IntervalPos != 0 {
 		return i.IntervalPos
 	}
-	return i.Expr.Pos()
+	return i.Expr.Start()
 }
 
 func (i *IntervalExpr) End() Pos {
@@ -4778,7 +4779,7 @@ type EngineExpr struct {
 	OrderBy     *OrderByClause
 }
 
-func (e *EngineExpr) Pos() Pos {
+func (e *EngineExpr) Start() Pos {
 	return e.EnginePos
 }
 
@@ -4866,12 +4867,12 @@ type ColumnTypeExpr struct {
 	Name *Ident
 }
 
-func (c *ColumnTypeExpr) Pos() Pos {
-	return c.Name.NamePos
+func (c *ColumnTypeExpr) Start() Pos {
+	return c.Name.start
 }
 
 func (c *ColumnTypeExpr) End() Pos {
-	return c.Name.NameEnd
+	return c.Name.end
 }
 
 func (c *ColumnTypeExpr) String() string {
@@ -4894,7 +4895,7 @@ type ColumnArgList struct {
 	Items         []Expr
 }
 
-func (c *ColumnArgList) Pos() Pos {
+func (c *ColumnArgList) Start() Pos {
 	return c.LeftParenPos
 }
 
@@ -4933,7 +4934,7 @@ type ColumnExprList struct {
 	Items       []Expr
 }
 
-func (c *ColumnExprList) Pos() Pos {
+func (c *ColumnExprList) Start() Pos {
 	return c.ListPos
 }
 
@@ -4975,7 +4976,7 @@ type WhenClause struct {
 	Else    Expr
 }
 
-func (w *WhenClause) Pos() Pos {
+func (w *WhenClause) Start() Pos {
 	return w.WhenPos
 }
 
@@ -5025,7 +5026,7 @@ type CaseExpr struct {
 	Else    Expr
 }
 
-func (c *CaseExpr) Pos() Pos {
+func (c *CaseExpr) Start() Pos {
 	return c.CasePos
 }
 
@@ -5079,7 +5080,7 @@ type CastExpr struct {
 	AsType    Expr
 }
 
-func (c *CastExpr) Pos() Pos {
+func (c *CastExpr) Start() Pos {
 	return c.CastPos
 }
 
@@ -5119,7 +5120,7 @@ type WithClause struct {
 	CTEs    []*CTEStmt
 }
 
-func (w *WithClause) Pos() Pos {
+func (w *WithClause) Start() Pos {
 	return w.WithPos
 }
 
@@ -5157,7 +5158,7 @@ type TopClause struct {
 	WithTies bool
 }
 
-func (t *TopClause) Pos() Pos {
+func (t *TopClause) Start() Pos {
 	return t.TopPos
 }
 
@@ -5192,7 +5193,7 @@ type CreateLiveView struct {
 	UUID         *UUID
 	OnCluster    *ClusterClause
 	Destination  *DestinationClause
-	TableSchema  *TableSchemaClause
+	TableSchema  *SchemaClause
 	WithTimeout  *WithTimeoutClause
 	SubQuery     *SubQuery
 }
@@ -5201,7 +5202,7 @@ func (c *CreateLiveView) Type() string {
 	return "LIVE_VIEW"
 }
 
-func (c *CreateLiveView) Pos() Pos {
+func (c *CreateLiveView) Start() Pos {
 	return c.CreatePos
 }
 
@@ -5290,7 +5291,7 @@ type WithTimeoutClause struct {
 	Number         *NumberLiteral
 }
 
-func (w *WithTimeoutClause) Pos() Pos {
+func (w *WithTimeoutClause) Start() Pos {
 	return w.WithTimeoutPos
 }
 
@@ -5322,7 +5323,7 @@ type TableExpr struct {
 	HasFinal bool
 }
 
-func (t *TableExpr) Pos() Pos {
+func (t *TableExpr) Start() Pos {
 	return t.TablePos
 }
 
@@ -5362,7 +5363,7 @@ type OnClause struct {
 	On    *ColumnExprList
 }
 
-func (o *OnClause) Pos() Pos {
+func (o *OnClause) Start() Pos {
 	return o.OnPos
 }
 
@@ -5391,7 +5392,7 @@ type UsingClause struct {
 	Using    *ColumnExprList
 }
 
-func (u *UsingClause) Pos() Pos {
+func (u *UsingClause) Start() Pos {
 	return u.UsingPos
 }
 
@@ -5423,7 +5424,7 @@ type JoinExpr struct {
 	Constraints Expr
 }
 
-func (j *JoinExpr) Pos() Pos {
+func (j *JoinExpr) Start() Pos {
 	return j.JoinPos
 }
 
@@ -5490,7 +5491,7 @@ type JoinConstraintClause struct {
 	Using         *ColumnExprList
 }
 
-func (j *JoinConstraintClause) Pos() Pos {
+func (j *JoinConstraintClause) Start() Pos {
 	return j.ConstraintPos
 }
 
@@ -5534,7 +5535,7 @@ type FromClause struct {
 	Expr    Expr
 }
 
-func (f *FromClause) Pos() Pos {
+func (f *FromClause) Start() Pos {
 	return f.FromPos
 }
 
@@ -5563,7 +5564,7 @@ type IsNullExpr struct {
 	Expr  Expr
 }
 
-func (n *IsNullExpr) Pos() Pos {
+func (n *IsNullExpr) Start() Pos {
 	return n.IsPos
 }
 
@@ -5592,8 +5593,8 @@ type IsNotNullExpr struct {
 	Expr  Expr
 }
 
-func (n *IsNotNullExpr) Pos() Pos {
-	return n.Expr.Pos()
+func (n *IsNotNullExpr) Start() Pos {
+	return n.Expr.Start()
 }
 
 func (n *IsNotNullExpr) End() Pos {
@@ -5622,7 +5623,7 @@ type AliasExpr struct {
 	Alias    Expr
 }
 
-func (a *AliasExpr) Pos() Pos {
+func (a *AliasExpr) Start() Pos {
 	return a.AliasPos
 }
 
@@ -5661,7 +5662,7 @@ type WhereClause struct {
 	Expr     Expr
 }
 
-func (w *WhereClause) Pos() Pos {
+func (w *WhereClause) Start() Pos {
 	return w.WherePos
 }
 
@@ -5690,7 +5691,7 @@ type PrewhereClause struct {
 	Expr        Expr
 }
 
-func (w *PrewhereClause) Pos() Pos {
+func (w *PrewhereClause) Start() Pos {
 	return w.PrewherePos
 }
 
@@ -5721,7 +5722,7 @@ type GroupByClause struct {
 	WithTotals    bool
 }
 
-func (g *GroupByClause) Pos() Pos {
+func (g *GroupByClause) Start() Pos {
 	return g.GroupByPos
 }
 
@@ -5766,7 +5767,7 @@ type HavingClause struct {
 	Expr      Expr
 }
 
-func (h *HavingClause) Pos() Pos {
+func (h *HavingClause) Start() Pos {
 	return h.HavingPos
 }
 
@@ -5793,7 +5794,7 @@ type LimitClause struct {
 	Offset   Expr
 }
 
-func (l *LimitClause) Pos() Pos {
+func (l *LimitClause) Start() Pos {
 	return l.LimitPos
 }
 
@@ -5834,8 +5835,8 @@ type LimitByClause struct {
 	ByExpr *ColumnExprList
 }
 
-func (l *LimitByClause) Pos() Pos {
-	return l.Limit.Pos()
+func (l *LimitByClause) Start() Pos {
+	return l.Limit.Start()
 }
 
 func (l *LimitByClause) End() Pos {
@@ -5884,7 +5885,7 @@ type WindowExpr struct {
 	Frame         *WindowFrameClause
 }
 
-func (w *WindowExpr) Pos() Pos {
+func (w *WindowExpr) Start() Pos {
 	return w.LeftParenPos
 }
 
@@ -5940,7 +5941,7 @@ type WindowClause struct {
 	AsPos     Pos
 }
 
-func (w *WindowClause) Pos() Pos {
+func (w *WindowClause) Start() Pos {
 	return w.WindowPos
 }
 
@@ -5979,7 +5980,7 @@ type WindowFrameClause struct {
 	Extend   Expr
 }
 
-func (f *WindowFrameClause) Pos() Pos {
+func (f *WindowFrameClause) Start() Pos {
 	return f.FramePos
 }
 
@@ -6008,8 +6009,8 @@ type WindowFrameExtendExpr struct {
 	Expr Expr
 }
 
-func (f *WindowFrameExtendExpr) Pos() Pos {
-	return f.Expr.Pos()
+func (f *WindowFrameExtendExpr) Start() Pos {
+	return f.Expr.Start()
 }
 
 func (f *WindowFrameExtendExpr) End() Pos {
@@ -6036,11 +6037,11 @@ type BetweenClause struct {
 	And     Expr
 }
 
-func (f *BetweenClause) Pos() Pos {
+func (f *BetweenClause) Start() Pos {
 	if f.Expr != nil {
-		return f.Expr.Pos()
+		return f.Expr.Start()
 	}
-	return f.Between.Pos()
+	return f.Between.Start()
 }
 
 func (f *BetweenClause) End() Pos {
@@ -6081,7 +6082,7 @@ type WindowFrameCurrentRow struct {
 	RowEnd     Pos
 }
 
-func (f *WindowFrameCurrentRow) Pos() Pos {
+func (f *WindowFrameCurrentRow) Start() Pos {
 	return f.CurrentPos
 }
 
@@ -6105,7 +6106,7 @@ type WindowFrameUnbounded struct {
 	Direction    string
 }
 
-func (f *WindowFrameUnbounded) Pos() Pos {
+func (f *WindowFrameUnbounded) Start() Pos {
 	return f.UnboundedPos
 }
 
@@ -6129,8 +6130,8 @@ type WindowFrameNumber struct {
 	Direction    string
 }
 
-func (f *WindowFrameNumber) Pos() Pos {
-	return f.Number.Pos()
+func (f *WindowFrameNumber) Start() Pos {
+	return f.Number.Start()
 }
 
 func (f *WindowFrameNumber) End() Pos {
@@ -6160,7 +6161,7 @@ type ArrayJoinClause struct {
 	Expr     Expr
 }
 
-func (a *ArrayJoinClause) Pos() Pos {
+func (a *ArrayJoinClause) Start() Pos {
 	return a.ArrayPos
 }
 
@@ -6206,7 +6207,7 @@ type SelectQuery struct {
 	Except        *SelectQuery
 }
 
-func (s *SelectQuery) Pos() Pos {
+func (s *SelectQuery) Start() Pos {
 	return s.SelectPos
 }
 
@@ -6405,8 +6406,8 @@ type SubQuery struct {
 	Select   *SelectQuery
 }
 
-func (s *SubQuery) Pos() Pos {
-	return s.Select.Pos()
+func (s *SubQuery) Start() Pos {
+	return s.Select.Start()
 }
 
 func (s *SubQuery) End() Pos {
@@ -6440,7 +6441,7 @@ type NotExpr struct {
 	Expr   Expr
 }
 
-func (n *NotExpr) Pos() Pos {
+func (n *NotExpr) Start() Pos {
 	return n.NotPos
 }
 
@@ -6466,7 +6467,7 @@ type NegateExpr struct {
 	Expr      Expr
 }
 
-func (n *NegateExpr) Pos() Pos {
+func (n *NegateExpr) Start() Pos {
 	return n.NegatePos
 }
 
@@ -6492,7 +6493,7 @@ type GlobalInOperation struct {
 	Expr      Expr
 }
 
-func (g *GlobalInOperation) Pos() Pos {
+func (g *GlobalInOperation) Start() Pos {
 	return g.GlobalPos
 }
 
@@ -6520,7 +6521,7 @@ type ExtractExpr struct {
 	FromExpr   Expr
 }
 
-func (e *ExtractExpr) Pos() Pos {
+func (e *ExtractExpr) Start() Pos {
 	return e.ExtractPos
 }
 
@@ -6555,7 +6556,7 @@ type DropDatabase struct {
 	OnCluster    *ClusterClause
 }
 
-func (d *DropDatabase) Pos() Pos {
+func (d *DropDatabase) Start() Pos {
 	return d.DropPos
 }
 
@@ -6607,7 +6608,7 @@ type DropStmt struct {
 	Modifier    string
 }
 
-func (d *DropStmt) Pos() Pos {
+func (d *DropStmt) Start() Pos {
 	return d.DropPos
 }
 
@@ -6665,7 +6666,7 @@ type DropUserOrRole struct {
 	From         *Ident
 }
 
-func (d *DropUserOrRole) Pos() Pos {
+func (d *DropUserOrRole) Start() Pos {
 	return d.DropPos
 }
 
@@ -6721,7 +6722,7 @@ type UseStmt struct {
 	Database     *Ident
 }
 
-func (u *UseStmt) Pos() Pos {
+func (u *UseStmt) Start() Pos {
 	return u.UsePos
 }
 
@@ -6749,7 +6750,7 @@ type CTEStmt struct {
 	ColumnAliases []*Ident
 }
 
-func (c *CTEStmt) Pos() Pos {
+func (c *CTEStmt) Start() Pos {
 	return c.CTEPos
 }
 
@@ -6799,7 +6800,7 @@ type SetStmt struct {
 	Settings *SettingsClause
 }
 
-func (s *SetStmt) Pos() Pos {
+func (s *SetStmt) Start() Pos {
 	return s.SetPos
 }
 
@@ -6833,7 +6834,7 @@ type FormatClause struct {
 	Format    *Ident
 }
 
-func (f *FormatClause) Pos() Pos {
+func (f *FormatClause) Start() Pos {
 	return f.FormatPos
 }
 
@@ -6864,7 +6865,7 @@ type OptimizeStmt struct {
 	Deduplicate  *DeduplicateClause
 }
 
-func (o *OptimizeStmt) Pos() Pos {
+func (o *OptimizeStmt) Start() Pos {
 	return o.OptimizePos
 }
 
@@ -6923,7 +6924,7 @@ type DeduplicateClause struct {
 	Except         *ColumnExprList
 }
 
-func (d *DeduplicateClause) Pos() Pos {
+func (d *DeduplicateClause) Start() Pos {
 	return d.DeduplicatePos
 }
 
@@ -6971,7 +6972,7 @@ type SystemStmt struct {
 	Expr      Expr
 }
 
-func (s *SystemStmt) Pos() Pos {
+func (s *SystemStmt) Start() Pos {
 	return s.SystemPos
 }
 
@@ -6999,7 +7000,7 @@ type SystemFlushExpr struct {
 	Distributed  *TableIdentifier
 }
 
-func (s *SystemFlushExpr) Pos() Pos {
+func (s *SystemFlushExpr) Start() Pos {
 	return s.FlushPos
 }
 
@@ -7036,7 +7037,7 @@ type SystemReloadExpr struct {
 	Type         string
 }
 
-func (s *SystemReloadExpr) Pos() Pos {
+func (s *SystemReloadExpr) Start() Pos {
 	return s.ReloadPos
 }
 
@@ -7071,7 +7072,7 @@ type SystemSyncExpr struct {
 	Cluster *TableIdentifier
 }
 
-func (s *SystemSyncExpr) Pos() Pos {
+func (s *SystemSyncExpr) Start() Pos {
 	return s.SyncPos
 }
 
@@ -7103,7 +7104,7 @@ type SystemCtrlExpr struct {
 	Cluster      *TableIdentifier
 }
 
-func (s *SystemCtrlExpr) Pos() Pos {
+func (s *SystemCtrlExpr) Start() Pos {
 	return s.CtrlPos
 }
 
@@ -7140,7 +7141,7 @@ type SystemDropExpr struct {
 	Type         string
 }
 
-func (s *SystemDropExpr) Pos() Pos {
+func (s *SystemDropExpr) Start() Pos {
 	return s.DropPos
 }
 
@@ -7167,7 +7168,7 @@ type TruncateTable struct {
 	OnCluster    *ClusterClause
 }
 
-func (t *TruncateTable) Pos() Pos {
+func (t *TruncateTable) Start() Pos {
 	return t.TruncatePos
 }
 
@@ -7217,7 +7218,7 @@ type SampleClause struct {
 	Offset    *RatioExpr
 }
 
-func (s *SampleClause) Pos() Pos {
+func (s *SampleClause) Start() Pos {
 	return s.SamplePos
 }
 
@@ -7260,7 +7261,7 @@ type DeleteClause struct {
 	WhereExpr Expr
 }
 
-func (d *DeleteClause) Pos() Pos {
+func (d *DeleteClause) Start() Pos {
 	return d.DeletePos
 }
 
@@ -7308,7 +7309,7 @@ type ColumnNamesExpr struct {
 	ColumnNames   []NestedIdentifier
 }
 
-func (c *ColumnNamesExpr) Pos() Pos {
+func (c *ColumnNamesExpr) Start() Pos {
 	return c.LeftParenPos
 }
 
@@ -7346,7 +7347,7 @@ type AssignmentValues struct {
 	Values        []Expr
 }
 
-func (v *AssignmentValues) Pos() Pos {
+func (v *AssignmentValues) Start() Pos {
 	return v.LeftParenPos
 }
 
@@ -7388,7 +7389,7 @@ type InsertStmt struct {
 	SelectExpr      *SelectQuery
 }
 
-func (i *InsertStmt) Pos() Pos {
+func (i *InsertStmt) Start() Pos {
 	return i.InsertPos
 }
 
@@ -7465,7 +7466,7 @@ type CheckStmt struct {
 	Partition *PartitionClause
 }
 
-func (c *CheckStmt) Pos() Pos {
+func (c *CheckStmt) Start() Pos {
 	return c.CheckPos
 }
 
@@ -7504,7 +7505,7 @@ type UnaryExpr struct {
 	Expr     Expr
 }
 
-func (n *UnaryExpr) Pos() Pos {
+func (n *UnaryExpr) Start() Pos {
 	return n.UnaryPos
 }
 
@@ -7534,7 +7535,7 @@ type RenameStmt struct {
 	OnCluster      *ClusterClause
 }
 
-func (r *RenameStmt) Pos() Pos {
+func (r *RenameStmt) Start() Pos {
 	return r.RenamePos
 }
 
@@ -7588,8 +7589,8 @@ type TargetPair struct {
 	New *TableIdentifier
 }
 
-func (t *TargetPair) Pos() Pos {
-	return t.Old.Pos()
+func (t *TargetPair) Start() Pos {
+	return t.Old.Start()
 }
 
 func (t *TargetPair) End() Pos {
@@ -7606,7 +7607,7 @@ type ExplainStmt struct {
 	Statement  Expr
 }
 
-func (e *ExplainStmt) Pos() Pos {
+func (e *ExplainStmt) Start() Pos {
 	return e.ExplainPos
 }
 
@@ -7639,7 +7640,7 @@ type PrivilegeClause struct {
 	Params       *ParamExprList
 }
 
-func (p *PrivilegeClause) Pos() Pos {
+func (p *PrivilegeClause) Start() Pos {
 	return p.PrivilegePos
 }
 
@@ -7682,7 +7683,7 @@ type GrantPrivilegeStmt struct {
 	WithOptions  []string
 }
 
-func (g *GrantPrivilegeStmt) Pos() Pos {
+func (g *GrantPrivilegeStmt) Start() Pos {
 	return g.GrantPos
 }
 
