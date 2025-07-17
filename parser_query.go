@@ -979,33 +979,30 @@ func (p *Parser) parseSelectStmt(pos Pos) (*SelectQuery, error) { // nolint: fun
 }
 
 func (p *Parser) parseCTEStmt(pos Pos) (*CTEStmt, error) {
-	expr, err := p.parseExpr(pos)
+	alias, err := p.parseIdent()
 	if err != nil {
 		return nil, err
 	}
+
+	columnAliases, err := p.tryParseColumnAliases()
+	if err != nil {
+		return nil, err
+	}
+
 	if err := p.expectKeyword(KeywordAs); err != nil {
 		return nil, err
 	}
-	if p.matchTokenKind(TokenKindLParen) {
-		selectQuery, err := p.parseSelectQuery(p.Pos())
-		if err != nil {
-			return nil, err
-		}
-		return &CTEStmt{
-			CTEPos: pos,
-			Expr:   expr,
-			Alias:  selectQuery,
-		}, nil
-	}
-	name, err := p.parseIdent()
+
+	selectQuery, err := p.parseSubQuery(p.Pos())
 	if err != nil {
 		return nil, err
 	}
 
 	return &CTEStmt{
-		CTEPos: pos,
-		Expr:   expr,
-		Alias:  name,
+		CTEPos:        pos,
+		Alias:         alias,
+		ColumnAliases: columnAliases,
+		Expr:          selectQuery,
 	}, nil
 }
 

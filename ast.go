@@ -1496,9 +1496,10 @@ func (i *Ident) End() Pos {
 }
 
 func (i *Ident) String() string {
-	if i.QuoteType == BackTicks {
+	switch i.QuoteType {
+	case BackTicks:
 		return "`" + i.Name + "`"
-	} else if i.QuoteType == DoubleQuote {
+	case DoubleQuote:
 		return `"` + i.Name + `"`
 	}
 	return i.Name
@@ -6742,9 +6743,10 @@ func (u *UseStmt) Accept(visitor ASTVisitor) error {
 }
 
 type CTEStmt struct {
-	CTEPos Pos
-	Expr   Expr
-	Alias  Expr
+	CTEPos        Pos
+	Expr          Expr
+	Alias         Expr
+	ColumnAliases []*Ident
 }
 
 func (c *CTEStmt) Pos() Pos {
@@ -6759,12 +6761,18 @@ func (c *CTEStmt) String() string {
 	var builder strings.Builder
 	builder.WriteString(c.Expr.String())
 	builder.WriteString(" AS ")
-	if _, isSelect := c.Alias.(*SelectQuery); isSelect {
-		builder.WriteByte('(')
+	if c.Alias != nil {
 		builder.WriteString(c.Alias.String())
-		builder.WriteByte(')')
-	} else {
-		builder.WriteString(c.Alias.String())
+	}
+	if len(c.ColumnAliases) > 0 {
+		builder.WriteString(" (")
+		for i, alias := range c.ColumnAliases {
+			if i > 0 {
+				builder.WriteString(", ")
+			}
+			builder.WriteString(alias.String())
+		}
+		builder.WriteString(")")
 	}
 	return builder.String()
 }
@@ -6777,6 +6785,11 @@ func (c *CTEStmt) Accept(visitor ASTVisitor) error {
 	}
 	if err := c.Alias.Accept(visitor); err != nil {
 		return err
+	}
+	for _, alias := range c.ColumnAliases {
+		if err := alias.Accept(visitor); err != nil {
+			return err
+		}
 	}
 	return visitor.VisitCTEExpr(c)
 }

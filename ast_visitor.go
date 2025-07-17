@@ -1,6 +1,7 @@
 package parser
 
 type ASTVisitor interface {
+	VisitCTEExpr(expr *CTEStmt) error
 	VisitOperationExpr(expr *OperationExpr) error
 	VisitTernaryExpr(expr *TernaryOperation) error
 	VisitBinaryExpr(expr *BinaryOperation) error
@@ -145,7 +146,6 @@ type ASTVisitor interface {
 	VisitDropStmt(expr *DropStmt) error
 	VisitDropUserOrRole(expr *DropUserOrRole) error
 	VisitUseExpr(expr *UseStmt) error
-	VisitCTEExpr(expr *CTEStmt) error
 	VisitSetExpr(expr *SetStmt) error
 	VisitFormatExpr(expr *FormatClause) error
 	VisitOptimizeExpr(expr *OptimizeStmt) error
@@ -177,6 +177,8 @@ type ASTVisitor interface {
 }
 
 type VisitFunc func(expr Expr) error
+
+
 
 type DefaultASTVisitor struct {
 	Visit VisitFunc
@@ -419,8 +421,6 @@ func (v *DefaultASTVisitor) VisitKey(k *Key) error {
 	}
 	return nil
 }
-
-
 
 func (v *DefaultASTVisitor) VisitIdent(expr *Ident) error {
 	if v.Visit != nil {

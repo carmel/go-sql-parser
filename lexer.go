@@ -41,9 +41,9 @@ const (
 	TokenKindLBracket TokenKind = "["
 	TokenKindRBracket TokenKind = "]"
 
-	TokenKindComma  TokenKind = ","
-	TokenKindColon  TokenKind = ":"
-	TokenKindAtSign TokenKind = "@"
+	TokenKindComma     TokenKind = ","
+	TokenKindColon     TokenKind = ":"
+	TokenKindAtSign    TokenKind = "@"
 	TokenKindSemicolon TokenKind = ";"
 )
 

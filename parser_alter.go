@@ -410,19 +410,20 @@ func (p *Parser) parseAlterTableDropClause(pos Pos) (AlterTableClause, error) {
 		return nil, err
 	}
 
-	if kind == KeywordProjection {
+	switch kind {
+	case KeywordProjection:
 		return &AlterTableDropProjection{
 			DropPos:        pos,
 			ProjectionName: name,
 			IfExists:       ifExists,
 		}, nil
-	} else if kind == KeywordColumn {
+	case KeywordColumn:
 		return &AlterTableDropColumn{
 			DropPos:    pos,
 			ColumnName: name,
 			IfExists:   ifExists,
 		}, nil
-	} else {
+	default:
 		return &AlterTableDropIndex{
 			DropPos:   pos,
 			IndexName: name,
@@ -551,7 +552,8 @@ func (p *Parser) parseAlterTableClearClause(pos Pos) (AlterTableClause, error) {
 		}
 	}
 
-	if kind == KeywordProjection {
+	switch kind {
+	case KeywordProjection:
 		return &AlterTableClearProjection{
 			ClearPos:       pos,
 			StatementEnd:   statementEnd,
@@ -559,7 +561,7 @@ func (p *Parser) parseAlterTableClearClause(pos Pos) (AlterTableClause, error) {
 			ProjectionName: name,
 			PartitionExpr:  partition,
 		}, nil
-	} else if kind == KeywordColumn {
+	case KeywordColumn:
 		return &AlterTableClearColumn{
 			ClearPos:      pos,
 			StatementEnd:  statementEnd,
@@ -567,7 +569,7 @@ func (p *Parser) parseAlterTableClearClause(pos Pos) (AlterTableClause, error) {
 			ColumnName:    name,
 			PartitionExpr: partition,
 		}, nil
-	} else {
+	default:
 		return &AlterTableClearIndex{
 			ClearPos:      pos,
 			StatementEnd:  statementEnd,

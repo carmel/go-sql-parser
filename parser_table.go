@@ -592,12 +592,14 @@ func (p *Parser) parseTableColumnExpr(pos Pos) (*ColumnDef, error) {
 			}
 			column.OnUpdate = funcExpr
 			columnEnd = funcExpr.End()
-		case p.tryConsumeKeywords(KeywordComment):
-			column.Comment, err = p.parseString(p.Pos())
+		case p.matchKeyword(KeywordComment):
+			column.Comment, err = p.tryParseColumnComment(p.Pos())
 			if err != nil {
 				return nil, err
 			}
-			columnEnd = column.Comment.End()
+			if column.Comment != nil {
+				columnEnd = column.Comment.End()
+			}
 		default:
 			parsed = false
 		}

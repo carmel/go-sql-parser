@@ -771,7 +771,8 @@ func (p *Parser) parseDefaultClause(createUser *CreateUser) (bool, error) {
 		return false, err
 	}
 
-	if nextToken.String == KeywordRole {
+	switch nextToken.String {
+	case KeywordRole:
 		defaultRole, err := p.parseDefaultRoleClause(p.Pos())
 		if err != nil {
 			return false, err
@@ -779,7 +780,7 @@ func (p *Parser) parseDefaultClause(createUser *CreateUser) (bool, error) {
 		createUser.DefaultRole = defaultRole
 		createUser.StatementEnd = defaultRole.End()
 		return true, nil
-	} else if nextToken.String == KeywordDatabase {
+	case KeywordDatabase:
 		_ = p.lexer.consumeToken() // consume DEFAULT
 		_ = p.lexer.consumeToken() // consume DATABASE
 		if p.tryConsumeKeywords(KeywordNone) {
