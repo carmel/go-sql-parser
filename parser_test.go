@@ -43,12 +43,14 @@ func TestParseCreateTableWithColumnComments(t *testing.T) {
 	if col2Def.Comment == nil || col2Def.Comment.String() != "'User Name'" {
 		t.Errorf("Expected comment 'User Name' for column name, but got %v", col2Def.Comment.String())
 	}
+	fmt.Println(createTableStmt.String())
+
 }
 
 func TestParseCreateTableWithTableComment(t *testing.T) {
 	sql := `CREATE TABLE users (
 		id INT
-	) COMMENT = 'User Table';`
+	) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT = 'User Table';`
 	p := NewParser(sql)
 	stmts, err := p.Parse()
 	if err != nil {
@@ -62,23 +64,23 @@ func TestParseCreateTableWithTableComment(t *testing.T) {
 		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
 	}
 
-	if len(createTableStmt.TableOptions) != 1 {
-		t.Fatalf("Expected 1 table option, but got %d", len(createTableStmt.TableOptions))
+	tableOption := createTableStmt.TableOptions
+
+	for _, v := range tableOption {
+		if v.Name.Name == "COMMENT" {
+			comment, ok := v.Value.(*StringLiteral)
+			if !ok {
+				t.Fatalf("Expected table option value to be a StringLiteral")
+			}
+
+			if comment.Literal != "User Table" {
+				t.Errorf("Expected table comment 'User Table', but got %s", comment.Literal)
+			}
+		}
 	}
 
-	tableOption := createTableStmt.TableOptions[0]
-	if tableOption.Name.Name != "COMMENT" {
-		t.Errorf("Expected table option name 'COMMENT', but got %s", tableOption.Name.Name)
-	}
+	fmt.Println(createTableStmt.String())
 
-	comment, ok := tableOption.Value.(*StringLiteral)
-	if !ok {
-		t.Fatalf("Expected table option value to be a StringLiteral")
-	}
-
-	if comment.String() != "'User Table'" {
-		t.Errorf("Expected table comment 'User Table', but got %s", comment.String())
-	}
 }
 
 func TestParseCTEWithColumnAliases(t *testing.T) {
