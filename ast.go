@@ -1741,6 +1741,18 @@ func (c *CreateTable) Accept(visitor ASTVisitor) error {
 	return visitor.VisitCreateTable(c)
 }
 
+func (c *CreateTable) GetComment() string {
+	options := c.TableOptions
+	for _, v := range options {
+		if v.Name.Name == "COMMENT" {
+			if comment, ok := v.Value.(*StringLiteral); ok {
+				return comment.Literal
+			}
+		}
+	}
+	return ""
+}
+
 type CreateMaterializedView struct {
 	CreatePos    Pos // position of CREATE|ATTACH keyword
 	StatementEnd Pos

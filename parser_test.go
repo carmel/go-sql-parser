@@ -64,19 +64,8 @@ func TestParseCreateTableWithTableComment(t *testing.T) {
 		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
 	}
 
-	tableOption := createTableStmt.TableOptions
-
-	for _, v := range tableOption {
-		if v.Name.Name == "COMMENT" {
-			comment, ok := v.Value.(*StringLiteral)
-			if !ok {
-				t.Fatalf("Expected table option value to be a StringLiteral")
-			}
-
-			if comment.Literal != "User Table" {
-				t.Errorf("Expected table comment 'User Table', but got %s", comment.Literal)
-			}
-		}
+	if createTableStmt.GetComment() != "User Table" {
+		t.Errorf("Expected table comment 'User Table', but got %s", createTableStmt.GetComment())
 	}
 
 	fmt.Println(createTableStmt.String())
