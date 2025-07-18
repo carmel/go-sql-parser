@@ -9,7 +9,8 @@ import (
 func TestParseCreateTableWithColumnComments(t *testing.T) {
 	sql := `CREATE TABLE users (
 		id INT COMMENT 'User ID',
-		name VARCHAR(255) COMMENT 'User Name'
+		name VARCHAR(255) COMMENT 'User Name',
+		phone varchar(20) NOT NULL COMMENT 'Phone Number',
 	);`
 	p := NewParser(sql)
 	stmts, err := p.Parse()
@@ -24,7 +25,7 @@ func TestParseCreateTableWithColumnComments(t *testing.T) {
 		t.Fatalf("Expected CreateTable statement, but got %T", stmts[0])
 	}
 
-	if len(createTableStmt.TableSchema.Columns) != 2 {
+	if len(createTableStmt.TableSchema.Columns) != 3 {
 		t.Fatalf("Expected 2 columns, but got %d", len(createTableStmt.TableSchema.Columns))
 	}
 
@@ -42,6 +43,14 @@ func TestParseCreateTableWithColumnComments(t *testing.T) {
 	}
 	if col2Def.Comment == nil || col2Def.Comment.String() != "'User Name'" {
 		t.Errorf("Expected comment 'User Name' for column name, but got %v", col2Def.Comment.String())
+	}
+
+	col3Def, ok := createTableStmt.TableSchema.Columns[2].(*ColumnDef)
+	if !ok {
+		t.Fatalf("Expected second column to be a ColumnDef")
+	}
+	if col3Def.Comment == nil || col3Def.Comment.String() != "'Phone Number'" {
+		t.Errorf("Expected comment 'Phone Number' for column name, but got %v", col3Def.Comment.String())
 	}
 	fmt.Println(createTableStmt.String())
 

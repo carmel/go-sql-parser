@@ -4048,6 +4048,10 @@ type ColumnDef struct {
 	OnUpdate         *FunctionExpr
 }
 
+func (c *ColumnDef) GetName() string {
+	return c.Name.Ident.Name
+}
+
 func (c *ColumnDef) Start() Pos {
 	return c.Name.Start()
 }
